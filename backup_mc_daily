@@ -46,7 +46,10 @@ for name in "${!player_counts[@]}"; do
 done
 
 # Format the player names with quotes and join them with spaces
-formatted_names=$(printf '"%s" ' "${player_names[@]}")
+formatted_names=""
+for name in "${player_names[@]}"; do
+    formatted_names+="\"$name\" "
+done
 
 # Save the formatted player names to the variable search_strings
 IFS='"' read -ra search_strings <<< "${formatted_names%\"}"

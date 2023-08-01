@@ -52,7 +52,7 @@ formatted_names=$(printf '"%s" ' "${player_names[@]}")
 search_strings="${formatted_names}"
 
 # Print out the formatted player names
-#echo "${search_strings}"
+echo "${search_strings}"
 
 # Initialize variables to store the most recent file and date
 most_recent_file=""
@@ -94,6 +94,8 @@ for search_string in "${search_strings[@]}"; do
         fi
     done < <(find "$log_search_path" -type f \( -name "*.log*" -o -name "*.gz" \))
 done
+echo "Most recent file containing any of the search strings: $most_recent_file"
+echo "Most recent date of any of the search strings: $most_recent_date"
 
 # Output the date (YYYY-MM-DD) of the most recent file containing any of the search strings
 if [[ "$most_recent_date" != "0000-00-00" ]]; then

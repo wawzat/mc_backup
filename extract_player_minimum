@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Change the directory to the log folder
+cd /home/mcserver/minecraft/logs
+
+# Set the minimum number of plays required to include a player name
+minimum_plays=30
+
+# Initialize an associative array to store player names and their occurrence count
+declare -A player_counts
+
+# Loop through each .gz file in the directory
+for file in *.gz; do
+    # Use zgrep to search for player names and extract them
+    # The regular expression ' joined the game' will match lines with player names followed by ' joined the game'
+    # The -o option for grep only prints the matching part of the line.
+    # The -h option for zgrep suppresses filenames in the output.
+    names_found=$(zgrep -oE '[[:alnum:]_]+ joined the game' "$file" | awk '{print $1}')
+
+    # Increment the occurrence count of each player name in the associative array
+    for name in $names_found; do
+        ((player_counts["$name"]++))
+    done
+done
+
+# Initialize an empty array to store player names that meet the minimum play requirement
+player_names=()
+
+# Loop through the associative array and filter player names based on the minimum play count
+for name in "${!player_counts[@]}"; do
+    count="${player_counts[$name]}"
+    if ((count >= minimum_plays)); then
+        player_names+=("$name")
+    fi
+done
+
+# Format the player names with quotes and join them with spaces
+formatted_names=$(printf '"%s" ' "${player_names[@]}")
+
+# Save the formatted player names to the variable search_strings
+search_strings="${formatted_names}"
+
+# Print out the formatted player names
+echo "${search_strings}"

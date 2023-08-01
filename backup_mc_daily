@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# The array of strings to search for
+search_strings=("emmo55" "jayyman55" "justracy" "wawzat")
+
+# The path where you want to search for .log files and .gz files
+search_path="/home/mcserver/minecraft/logs"
+
+# Initialize variables to store the most recent file and date
+most_recent_file=""
+most_recent_date="0000-00-00"  # Initialize with a date in the past
+
+# Function to get the modification date of a file
+get_file_date() {
+    local file="$1"
+    stat -c "%Y" "$file"
+}
+
+# Loop through each search string
+for search_string in "${search_strings[@]}"; do
+    # Use find to search for .log files and .gz files containing the current search string
+    # and compare their dates to find the most recent file
+    while IFS= read -r file; do
+        if [[ "$file" == *.gz ]]; then
+            # For .gz files, use zgrep
+            if zgrep -q "$search_string" "$file"; then
+                # Get the date of the file
+                file_date=$(get_file_date "$file")
+                # Compare the date of the current file with the most_recent_date
+                if [[ "$file_date" -gt "$most_recent_date" ]]; then
+                    most_recent_file="$file"
+                    most_recent_date="$file_date"
+                fi
+            fi
+        else
+            # For uncompressed .log files, use grep
+            if grep -q "$search_string" "$file"; then
+                # Get the date of the file
+                file_date=$(get_file_date "$file")
+                # Compare the date of the current file with the most_recent_date
+                if [[ "$file_date" -gt "$most_recent_date" ]]; then
+                    most_recent_file="$file"
+                    most_recent_date="$file_date"
+                fi
+            fi
+        fi
+    done < <(find "$search_path" -type f \( -name "*.log*" -o -name "*.gz" \))
+done
+
+# Output the date (YYYY-MM-DD) of the most recent file containing any of the search strings
+if [[ "$most_recent_date" != "0000-00-00" ]]; then
+    # Get the actual date of the file and format it as "YYYY-MM-DD"
+    date=$(date -d "@$most_recent_date" +"%Y-%m-%d")
+    echo "Date of the most recent file containing any of the search strings: $date"
+
+    # Check if any files in /home/mcserver/minecraft/backup are newer than the most recent date
+    if [[ $(find "/home/mcserver/minecraft/backup" -type f -newermt "$date" 2>/dev/null) ]]; then
+        result="True: Some files in /home/mcserver/minecraft/backup were created after $date."
+    else
+        result="False: No files in /home/mcserver/minecraft/backup were created after $date."
+    fi
+else
+    result="None of the search strings found in any of the .log files or .gz files."
+fi
+
+# Use the result in an if condition
+if [[ $result == *"False"* ]]; then
+        screen -R mc -xX stuff "say Server backup starting. World not saving until complete...$(printf '\r')"
+        screen -R mc -xX stuff "save-off$(printf '\r')"
+        screen -R mc -xX stuff "save-all$(printf '\r')"
+        sleep 3
+
+        mv /home/mcserver/minecraft/backup/minecraft_day3.tar.gz /home/mcserver/minecraft/backup/minecraft_day4.tar.gz
+        mv /home/mcserver/minecraft/backup/minecraft_day2.tar.gz /home/mcserver/minecraft/backup/minecraft_day3.tar.gz
+        mv /home/mcserver/minecraft/backup/minecraft_day1.tar.gz /home/mcserver/minecraft/backup/minecraft_day2.tar.gz
+        mv /home/mcserver/minecraft/backup/minecraft_day0.tar.gz /home/mcserver/minecraft/backup/minecraft_day1.tar.gz
+
+        tar -cpvzf /home/mcserver/minecraft/backup/minecraft_day0.tar.gz \
+         /home/mcserver/minecraft/world \
+         /home/mcserver/minecraft/world_nether \
+         /home/mcserver/minecraft/world_the_end
+
+        screen -R mc -xX stuff "save-on$(printf '\r')"
+        screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
+else
+    echo "World not modified since most recent backup, no backup required."
+fi

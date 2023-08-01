@@ -1,0 +1,4 @@
+#!/bin/bash
+cp \
+ /home/mcserver/minecraft/backup/minecraft_day3.tar.gz \
+ /home/mcserver/minecraft/backup/minecraft_15th.tar.gz

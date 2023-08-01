@@ -1,0 +1,4 @@
+#!/bin/bash
+cp \
+ /home/mcserver/minecraft/backup/minecraft_day4.tar.gz \
+ /home/mcserver/minecraft/backup/minecraft_1st.tar.gz

@@ -12,7 +12,7 @@ world_paths=(
 )
 
 # Change the directory to the log folder
-cd "$backup_path"
+cd "$log_search_path"
 
 # Set the minimum number of plays required to include a player name
 minimum_plays=30

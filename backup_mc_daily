@@ -35,16 +35,15 @@ for file in *.gz; do
 done
 
 # Initialize an empty array to store player names that meet the minimum play requirement
-player_names=()
+search_strings=()
 
-# Save the formatted player names to the variable search_strings
-formatted_names=$(printf '"%s" ' "${player_names[@]}")
-
-# Trim trailing whitespace (if any)
-formatted_names=${formatted_names%" "}
-
-# Save the formatted player names to the array search_strings
-IFS='"' read -ra search_strings <<< "$formatted_names"
+# Loop through the associative array and filter player names based on the minimum play count
+for name in "${!player_counts[@]}"; do
+    count="${player_counts[$name]}"
+    if ((count >= minimum_plays)); then
+        search_strings+=("$name")
+    fi
+done
 
 # Print out the formatted player names
 #echo "${search_strings}"

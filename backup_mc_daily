@@ -1,10 +1,58 @@
 #!/bin/bash
 
-# The array of strings to search for
-search_strings=("emmo55" "jayyman55" "justracy" "wawzat")
+# Configuration variables
+num_days = 5
+backup_path="/home/mcserver/minecraft/backup"
+log_search_path="/home/mcserver/minecraft/logs"
+world_paths=(
+  "/home/mcserver/minecraft/world"
+  "/home/mcserver/minecraft/world_nether"
+  "/home/mcserver/minecraft/world_the_end"
+  # Add more paths here if needed
+)
 
-# The path where you want to search for .log files and .gz files
-search_path="/home/mcserver/minecraft/logs"
+# Change the directory to the log folder
+cd "$backup_path"
+
+# Set the minimum number of plays required to include a player name
+minimum_plays=30
+
+# Initialize an associative array to store player names and their occurrence count
+declare -A player_counts
+
+# Loop through each .gz file in the directory
+for file in *.gz; do
+    # Use zgrep to search for player names and extract them
+    # The regular expression ' joined the game' will match lines with player names followed by ' joined the game'
+    # The -o option for grep only prints the matching part of the line.
+    # The -h option for zgrep suppresses filenames in the output.
+    names_found=$(zgrep -oE '[[:alnum:]_]+ joined the game' "$file" | awk '{print $1}')
+    
+    # Increment the occurrence count of each player name in the associative array
+    for name in $names_found; do
+        ((player_counts["$name"]++))
+    done
+done
+
+# Initialize an empty array to store player names that meet the minimum play requirement
+player_names=()
+
+# Loop through the associative array and filter player names based on the minimum play count
+for name in "${!player_counts[@]}"; do
+    count="${player_counts[$name]}"
+    if ((count >= minimum_plays)); then
+        player_names+=("$name")
+    fi
+done
+
+# Format the player names with quotes and join them with spaces
+formatted_names=$(printf '"%s" ' "${player_names[@]}")
+
+# Save the formatted player names to the variable search_strings
+search_strings="${formatted_names}"
+
+# Print out the formatted player names
+#echo "${search_strings}"
 
 # Initialize variables to store the most recent file and date
 most_recent_file=""
@@ -44,7 +92,7 @@ for search_string in "${search_strings[@]}"; do
                 fi
             fi
         fi
-    done < <(find "$search_path" -type f \( -name "*.log*" -o -name "*.gz" \))
+    done < <(find "$log_search_path" -type f \( -name "*.log*" -o -name "*.gz" \))
 done
 
 # Output the date (YYYY-MM-DD) of the most recent file containing any of the search strings
@@ -54,34 +102,33 @@ if [[ "$most_recent_date" != "0000-00-00" ]]; then
     echo "Date of the most recent file containing any of the search strings: $date"
 
     # Check if any files in /home/mcserver/minecraft/backup are newer than the most recent date
-    if [[ $(find "/home/mcserver/minecraft/backup" -type f -newermt "$date" 2>/dev/null) ]]; then
-        result="True: Some files in /home/mcserver/minecraft/backup were created after $date."
+    if [[ $(find "$backup_path" -type f -newermt "$date" 2>/dev/null) ]]; then
+        result="True: Some files in $backup_path were created after $date."
     else
-        result="False: No files in /home/mcserver/minecraft/backup were created after $date."
+        result="False: No files in $backup_path were created after $date."
     fi
 else
-    result="None of the search strings found in any of the .log files or .gz files."
+    result="None of the search strings found in any of the .log files."
 fi
 
-# Use the result in an if condition
 if [[ $result == *"False"* ]]; then
-        screen -R mc -xX stuff "say Server backup starting. World not saving until complete...$(printf '\r')"
-        screen -R mc -xX stuff "save-off$(printf '\r')"
-        screen -R mc -xX stuff "save-all$(printf '\r')"
-        sleep 3
+    screen -R mc -xX stuff "say Server backup starting. World not saving until complete...$(printf '\r')"
+    screen -R mc -xX stuff "save-off$(printf '\r')"
+    screen -R mc -xX stuff "save-all$(printf '\r')"
+    sleep 3
 
-        mv /home/mcserver/minecraft/backup/minecraft_day3.tar.gz /home/mcserver/minecraft/backup/minecraft_day4.tar.gz
-        mv /home/mcserver/minecraft/backup/minecraft_day2.tar.gz /home/mcserver/minecraft/backup/minecraft_day3.tar.gz
-        mv /home/mcserver/minecraft/backup/minecraft_day1.tar.gz /home/mcserver/minecraft/backup/minecraft_day2.tar.gz
-        mv /home/mcserver/minecraft/backup/minecraft_day0.tar.gz /home/mcserver/minecraft/backup/minecraft_day1.tar.gz
+    # Move the existing backup files
+    for ((i=num_days-1; i>0; i--)); do
+        current_day=$((i - 1))
+        if [ -f "${backup_path}/minecraft_day${current_day}.tar.gz" ]; then
+            mv "${backup_path}/minecraft_day${current_day}.tar.gz" "${backup_path}/minecraft_day${i}.tar.gz"
+        fi
+    done
 
-        tar -cpvzf /home/mcserver/minecraft/backup/minecraft_day0.tar.gz \
-         /home/mcserver/minecraft/world \
-         /home/mcserver/minecraft/world_nether \
-         /home/mcserver/minecraft/world_the_end
+    tar -cpvzf "${backup_path}/minecraft_day0.tar.gz" "${world_paths[@]}"
 
         screen -R mc -xX stuff "save-on$(printf '\r')"
         screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
 else
-    echo "World not modified since most recent backup, no backup required."
+    echo "World not modified since most recent backup, no backup required. $(printf '\r')"
 fi

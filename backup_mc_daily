@@ -49,7 +49,7 @@ done
 formatted_names=$(printf '"%s" ' "${player_names[@]}")
 
 # Save the formatted player names to the variable search_strings
-IFS='"' read -ra search_strings <<< "$formatted_names"
+IFS='"' read -ra search_strings <<< "${formatted_names%\"}"
 
 # Print out the formatted player names
 #echo "${search_strings}"

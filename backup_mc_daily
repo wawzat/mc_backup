@@ -69,6 +69,7 @@ for search_string in "${search_strings[@]}"; do
     # Use find to search for .log files and .gz files containing the current search string
     # and compare their dates to find the most recent file
     while IFS= read -r file; do
+        echo "$file"
         if [[ "$file" == *.gz ]]; then
             # For .gz files, use zgrep
             if zgrep -q "$search_string" "$file"; then

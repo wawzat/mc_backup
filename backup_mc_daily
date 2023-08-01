@@ -61,7 +61,6 @@ get_file_date() {
 
 # Loop through each search string
 for search_string in "${search_strings[@]}"; do
-    echo "Searching for $search_string"
     # Use find to search for .log files and .gz files containing the current search string
     # and compare their dates to find the most recent file
     while IFS= read -r file; do
@@ -90,13 +89,9 @@ for search_string in "${search_strings[@]}"; do
         fi
     done < <(find "$log_search_path" -type f \( -name "*.log*" -o -name "*.gz" \))
 done
-echo "Most recent file containing any of the search strings: $most_recent_file"
-echo "Most recent date of any of the search strings: $most_recent_date"
 
 # Output the date (YYYY-MM-DD) of the most recent file containing any of the search strings
 if [[ "$most_recent_date" != "0000-00-00" ]]; then
-    echo "Date of the most recent file containing any of the search strings: $most_recent_date"
-
     # Check if any files in /home/mcserver/minecraft/backup are newer than the most recent date
     if [[ $(find "$backup_path" -type f -newermt "$most_recent_date" 2>/dev/null) ]]; then
         result="True: Some files in $backup_path were created after $most_recent_date."

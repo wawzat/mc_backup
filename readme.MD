@@ -6,9 +6,9 @@
 
 ### Notes:
  
-- Modify the configuration variables at the top of the script according to your needs and direectory structure.
-- The script seraches the log files and determines players who have joined the game at least num_plays number of times and when they last joined.
-- It compares the most recent join to the date of the backup file and if the backup is less recent it backs up the world files.
+- Modify the configuration variables at the top of the script according to your needs and directory structure.
+- The script searches the log files and determines players who have joined the game at least minimum_plays number of times and when they last joined.
+- It compares the most recent join to the dates of the backup files and if the backup is less recent it backs up the world files.
 - Sample cron entry: 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day. 
   
  
@@ -25,7 +25,7 @@
 - 0 9 15 * * /home/mcserver/minecraft/mc_backup/backup_mc_15th runs the script at 9 am on the 15th of the month. 
 
 
-# extraact_player_minimums
+# extract_player_minimums
 
 ## Bash script that extracts the names of players from the logs that have joined the game at least num_plays number of times.  
 
@@ -36,7 +36,7 @@
   
 # extract_player_names
   
-## Bash script that extracts the names of all players from the logs along with the number of times they'be joined.
+## Bash script that extracts the names of all players from the logs along with the number of times they've joined.
   
 ### Notes:
   

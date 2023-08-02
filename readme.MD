@@ -1,4 +1,6 @@
-# A collection of bash scripts for backing up minecraft worlds and reviewing logs. The scripts are all stand-alone and do not depend on one another.
+# A bash script for backing up minecraft worlds on Linux based servers. 
+# The other bash scripts were used to test code that was used in the main script but may have some utility.
+# The scripts are all stand-alone and do not depend on one another.
   
 # backup_mc_daily
  

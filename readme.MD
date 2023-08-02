@@ -27,7 +27,7 @@
 
 # extract_player_minimums
 
-## Bash script that extracts the names of players from the logs that have joined the game at least num_plays number of times.  
+## Bash script that extracts the names of players from the logs that have joined the game at least minimum_plays number of times.  
 
 ### Notes:  
 

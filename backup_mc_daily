@@ -8,7 +8,6 @@
 # Configuration variables, change according to your particulars
 num_days=5  # Number of days to keep backups for
 minimum_plays=30 # Minimum number of game joins required to include a player name in the backup criteria
-
 backup_path="/home/mcserver/minecraft/backup"
 log_search_path="/home/mcserver/minecraft/logs"
 world_paths=(
@@ -20,7 +19,6 @@ world_paths=(
 
 # Change the directory to the log folder
 cd "$log_search_path"
-
 
 # Initialize an associative array to store player names and their occurrence count
 declare -A player_counts
@@ -92,8 +90,10 @@ for search_string in "${search_strings[@]}"; do
                 fi
             fi
         fi
-    done < <(find "$log_search_path" -type f \( -name "*.log*" -o -name "*.gz" \))
+    done < <(find "$log_search_path" -type f \( -name "*.log" -o -name "*.gz" \))
 done
+echo "Most recent log file: $most_recent_file"
+echo "Most recent log file date: $most_recent_date"
 
 # Output the date (YYYY-MM-DD) of the most recent file containing any of the search strings
 if [[ "$most_recent_date" != "0000-00-00" ]]; then

@@ -2,8 +2,10 @@
 # This script is intended to be run by cron for periodic backups of Minecraft data.
 # The script scans the logs for player names, the number of times they've joined and the most recent date they've joined.
 # The number of times they have joined is used to limint the number of player names to search which speeds up the search.
-# The log search is used as criteria to determine if a backup is required. If a player has joined since the last backup then a backup is required.
+# The log search is used as criteria to determine if a backup is required. If a player with more than minimum_plays has 
+#   joined since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
+# James S. Lucas - 20230802
 
 # Configuration variables, change according to your particulars
 num_days=5  # Number of days to keep backups for
@@ -23,12 +25,9 @@ cd "$log_search_path"
 # Initialize an associative array to store player names and their occurrence count
 declare -A player_counts
 
-# Loop through each .gz file in the directory
+# Loop through each .gz file in the logs directory
 for file in *.gz; do
     # Use zgrep to search for player names and extract them
-    # The regular expression ' joined the game' will match lines with player names followed by ' joined the game'
-    # The -o option for grep only prints the matching part of the line.
-    # The -h option for zgrep suppresses filenames in the output.
     names_found=$(zgrep -oE '[[:alnum:]_]+ joined the game' "$file" | awk '{print $1}')
     
     # Increment the occurrence count of each player name in the associative array
@@ -40,16 +39,13 @@ done
 # Initialize an empty array to store player names that meet the minimum play requirement
 search_strings=()
 
-# Loop through the associative array and filter player names based on the minimum play count
+# Loop through the associative array and filter player names based on the minimum_play count
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     if ((count >= minimum_plays)); then
         search_strings+=("$name")
     fi
 done
-
-# Print out the formatted player names
-#echo "${search_strings}"
 
 # Initialize variables to store the most recent file and date
 most_recent_file=""
@@ -62,11 +58,11 @@ get_file_date() {
     date -r "$file" +"%Y-%m-%d"
 }
 
-# Loop through each search string
+# Search for each search string (player name) in the log files and determine the date of the most recent file containing a player name
 for search_string in "${search_strings[@]}"; do
     echo "Searching for $search_string"
     # Use find to search for .log files and .gz files containing the current search string
-    # and compare their dates to find the most recent file
+    # and compare their dates to find the most recent log file that includes one of the player names.
     while IFS= read -r file; do
         if [[ "$file" == *.gz ]]; then
             # For .gz files, use zgrep
@@ -94,7 +90,7 @@ for search_string in "${search_strings[@]}"; do
     done < <(find "$log_search_path" -type f \( -name "*.log" -o -name "*.gz" \))
 done
 
-# Output the date (YYYY-MM-DD) of the most recent file containing any of the search strings
+# Check if the most recent backup is earlier or later than the most recent log file containing a player name
 if [[ "$most_recent_date" != "0000-00-00" ]]; then
     # Check if any files in /home/mcserver/minecraft/backup are newer than the most recent date
     if [[ $(find "$backup_path" -type f -newermt "$most_recent_date" 2>/dev/null) ]]; then
@@ -107,12 +103,13 @@ else
 fi
 
 if [[ $result == *"False"* ]]; then
+    # Execute the backup.
     screen -R mc -xX stuff "say Server backup starting. World not saving until complete...$(printf '\r')"
     screen -R mc -xX stuff "save-off$(printf '\r')"
     screen -R mc -xX stuff "save-all$(printf '\r')"
     sleep 3
 
-    # Move the existing backup files
+    # Move the existing backup files 0 -> 1, 1 -> 2, etc.
     for ((i=num_days-1; i>0; i--)); do
         current_day=$((i - 1))
         if [ -f "${backup_path}/minecraft_day${current_day}.tar.gz" ]; then
@@ -120,6 +117,7 @@ if [[ $result == *"False"* ]]; then
         fi
     done
 
+    # Create tha backup.
     tar -cpvzf "${backup_path}/minecraft_day0.tar.gz" "${world_paths[@]}"
 
         screen -R mc -xX stuff "save-on$(printf '\r')"

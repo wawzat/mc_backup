@@ -1,9 +1,14 @@
 #!/bin/bash
-# This script is intended to be run by cron for daily backups of Minecraft data.
+# This script is intended to be run by cron for periodic backups of Minecraft data.
+# The script scans the logs for player names, the number of times they've joined and the most recent date they've joined.
+# The number of times they have joined is used to limint the number of player names to search which speeds up the search.
+# The log search is used as criteria to determine if a backup is required. If a player has joined since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
 
 # Configuration variables, change according to your particulars
 num_days=5  # Number of days to keep backups for
+minimum_plays=30 # Minimum number of game joins required to include a player name in the backup criteria
+
 backup_path="/home/mcserver/minecraft/backup"
 log_search_path="/home/mcserver/minecraft/logs"
 world_paths=(
@@ -16,8 +21,6 @@ world_paths=(
 # Change the directory to the log folder
 cd "$log_search_path"
 
-# Set the minimum number of plays required to include a player name
-minimum_plays=30
 
 # Initialize an associative array to store player names and their occurrence count
 declare -A player_counts

@@ -8,7 +8,7 @@
 # James S. Lucas - 20230802
 
 # Configuration variables, change according to your particulars
-use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider
+use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider. You must install and setup rclone for this to work.
 rclone_remote="google_drive" # The name of the rclone remote to use
 num_days=5  # Number of days to keep backups for
 minimum_plays=30 # Minimum number of game joins required to include a player name in the backup criteria

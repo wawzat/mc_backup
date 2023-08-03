@@ -8,8 +8,10 @@
 # James S. Lucas - 20230802
 
 # Configuration variables, change according to your particulars
+use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider
+rclone_remote="google_drive" # The name of the rclone remote to use
 num_days=5  # Number of days to keep backups for
-minimum_plays=30 # Minimum number of game joins required to include a player name in the backup criteria
+minimum_plays=5 # Minimum number of game joins required to include a player name in the backup criteria
 backup_path="/home/mcserver/minecraft/backup"
 log_search_path="/home/mcserver/minecraft/logs"
 world_paths=(
@@ -122,6 +124,17 @@ if [[ $result == *"False"* ]]; then
 
         screen -R mc -xX stuff "save-on$(printf '\r')"
         screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
+    
+    if [[ "$use_rclone" == "True" ]]; then
+        # Move the existing backup files 0 -> 1, 1 -> 2, etc.
+        for ((i=num_days-1; i>0; i--)); do
+            current_day=$((i - 1))
+            if [ -f "${backup_path}/minecraft_day${current_day}.tar.gz" ]; then
+                rclone move "${backup_path}/minecraft_day${current_day}.tar.gz" "${rclone_remote}:minecraft_day${i}.tar.gz"
+            fi
+        done
+        rclone copy "${backup_path}/minecraft_day0.tar.gz" "${rclone_remote}:minecraft_day0.tar.gz"
+    fi
 else
     echo "World not modified since most recent backup, no backup required. $(printf '\r')"
 fi

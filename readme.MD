@@ -12,7 +12,7 @@
 - Requires the use of "screen" to run the minecraft server. Screen must be named "mc" for the script to work.
 -  Sample steps to start screen and launch minecraft server (modify the java command as required for your server):
 1. > screen -S mc
-2. > cd /home/mcserver/minecraft/mc_server
+2. > cd /home/mcserver/minecraft/
 3. > java -Xms12288M -Xmx12288M -XX:+UseG1GC -jar spigot-1.20.jar nogui
 - The script searches the log files and determines players who have joined the game at least minimum_plays number of times and when they last joined.
 - It compares the most recent join to the dates of the backup files and if the backup is less recent it backs up the world files.

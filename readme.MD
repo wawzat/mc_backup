@@ -9,6 +9,8 @@
 ### Notes:
  
 - Modify the configuration variables at the top of the script according to your needs and directory structure.
+- The script is designed to be run as a cron job.
+- Set rclone="False" if you don't want to use rclone to also copy the files to a cloud storage provider. To use rclone you must first have it installed and configured.
 - Requires the use of "screen" to run the minecraft server. Screen must be named "mc" for the script to work.
 -  Sample steps to start screen and launch minecraft server (modify the java command as required for your server):
 1. > screen -S mc

@@ -11,9 +11,9 @@
 - Modify the configuration variables at the top of the script according to your needs and directory structure.
 - Requires the use of "screen" to run the minecraft server. Screen must be named "mc" for the script to work.
 -  Sample steps to start screen and launch minecraft server (modify the java command as required for your server):
--    > screen -S mc
--    > cd /home/mcserver/minecraft/mc_server
--    > java -Xms12288M -Xmx12288M -XX:+UseG1GC -jar spigot-1.20.jar nogui
+> screen -S mc
+> cd /home/mcserver/minecraft/mc_server
+> java -Xms12288M -Xmx12288M -XX:+UseG1GC -jar spigot-1.20.jar nogui
 - The script searches the log files and determines players who have joined the game at least minimum_plays number of times and when they last joined.
 - It compares the most recent join to the dates of the backup files and if the backup is less recent it backs up the world files.
 - Sample cron entry: 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day. 

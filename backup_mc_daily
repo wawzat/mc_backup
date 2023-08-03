@@ -10,7 +10,7 @@
 # Configuration variables, change according to your particulars
 use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider
 rclone_remote="google_drive" # The name of the rclone remote to use
-num_days=5  # Number of days to keep backups for
+num_days=30  # Number of days to keep backups for
 minimum_plays=5 # Minimum number of game joins required to include a player name in the backup criteria
 backup_path="/home/mcserver/minecraft/backup"
 log_search_path="/home/mcserver/minecraft/logs"
@@ -62,7 +62,6 @@ get_file_date() {
 
 # Search for each search string (player name) in the log files and determine the date of the most recent file containing a player name
 for search_string in "${search_strings[@]}"; do
-    echo "Searching for $search_string"
     # Use find to search for .log files and .gz files containing the current search string
     # and compare their dates to find the most recent log file that includes one of the player names.
     while IFS= read -r file; do
@@ -126,11 +125,12 @@ if [[ $result == *"False"* ]]; then
         screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
     
     if [[ "$use_rclone" == "True" ]]; then
-        # Move the existing backup files 0 -> 1, 1 -> 2, etc.
+        # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.
         for ((i=num_days-1; i>0; i--)); do
             current_day=$((i - 1))
             rclone moveto "${rclone_remote}:minecraft_day${current_day}.tar.gz" "${rclone_remote}:minecraft_day${i}.tar.gz"
         done
+        # Copy the new backup to the rclone remote
         rclone copy "${backup_path}/minecraft_day0.tar.gz" "${rclone_remote}:"
     fi
 else

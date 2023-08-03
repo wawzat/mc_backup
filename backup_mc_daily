@@ -10,8 +10,8 @@
 # Configuration variables, change according to your particulars
 use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider
 rclone_remote="google_drive" # The name of the rclone remote to use
-num_days=30  # Number of days to keep backups for
-minimum_plays=5 # Minimum number of game joins required to include a player name in the backup criteria
+num_days=5  # Number of days to keep backups for
+minimum_plays=30 # Minimum number of game joins required to include a player name in the backup criteria
 backup_path="/home/mcserver/minecraft/backup"
 log_search_path="/home/mcserver/minecraft/logs"
 world_paths=(

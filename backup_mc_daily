@@ -130,10 +130,10 @@ if [[ $result == *"False"* ]]; then
         for ((i=num_days-1; i>0; i--)); do
             current_day=$((i - 1))
             if [ -f "${backup_path}/minecraft_day${current_day}.tar.gz" ]; then
-                rclone move "${backup_path}/minecraft_day${current_day}.tar.gz" "${rclone_remote}:minecraft_day${i}.tar.gz"
+                rclone move "${rclone_remote}/minecraft_day${current_day}.tar.gz" "${rclone_remote}:minecraft_day${i}.tar.gz"
             fi
         done
-        rclone copy "${backup_path}/minecraft_day0.tar.gz" "${rclone_remote}:minecraft_day0.tar.gz"
+        rclone copy "${backup_path}:minecraft_day0.tar.gz" "${rclone_remote}:minecraft_day0.tar.gz"
     fi
 else
     echo "World not modified since most recent backup, no backup required. $(printf '\r')"

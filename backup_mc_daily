@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script is intended to be run by cron for periodic backups of Minecraft data.
 # The script scans the logs for player names, the number of times they've joined and the most recent date they've joined.
-# The number of times they have joined is used to limint the number of player names to search which speeds up the search.
+# The number of times they have joined is used to limit the player names that trigger a backup to only those payers who have joined at least minimum_plays times.
 # The log search is used as criteria to determine if a backup is required. If a player with more than minimum_plays has 
 #   joined since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
@@ -26,16 +26,23 @@ script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 # Change the directory to the log folder
 cd "$log_search_path"
 
-# Initialize an associative array to store player names and their occurrence count
+# Initialize associative array's to store player names and their occurrence count and player names and their most recent join date
 declare -A player_counts
+declare -A player_dates
 
 # Loop through each .gz file in the logs directory
 for file in *.gz; do
     # Use zgrep to search for player names and extract them
     names_found=$(zgrep -oE '[[:alnum:]_]+ joined the game' "$file" | awk '{print $1}')
     
-    # Increment the occurrence count of each player name in the associative array
+    # Get the modification time of the log file
+    file_date=$(stat -c %Y "$file")
+    
+    # Update the most recent date for each player name in the associative array
     for name in $names_found; do
+        if [[ $file_date -gt ${player_dates["$name"]} ]]; then
+            player_dates["$name"]=$file_date
+        fi
         ((player_counts["$name"]++))
     done
 done
@@ -62,35 +69,23 @@ get_file_date() {
     date -r "$file" +"%Y-%m-%d"
 }
 
-# Search for each search string (player name) in the log files and determine the date of the most recent file containing a player name
+# Search for each search string (player name) in the player_dates array and determine the date of the most recent file containing a player name
 for search_string in "${search_strings[@]}"; do
-    # Use find to search for .log files and .gz files containing the current search string
-    # and compare their dates to find the most recent log file that includes one of the player names.
-    while IFS= read -r file; do
-        if [[ "$file" == *.gz ]]; then
-            # For .gz files, use zgrep
-            if zgrep -q "$search_string" "$file"; then
-                # Get the date of the file
-                file_date=$(get_file_date "$file")
-                # Compare the date of the current file with the most_recent_date
-                if [[ "$file_date" > "$most_recent_date" ]]; then
-                    most_recent_file="$file"
-                    most_recent_date="$file_date"
-                fi
+    # Get the most recent date for the current search string
+    most_recent_date="${player_dates["$search_string"]}"
+    # Loop through each world path and find the most recent backup file for the current search string
+    for world_path in "${world_paths[@]}"; do
+        # Use find to search for backup files containing the current search string
+        while IFS= read -r file; do
+            # Get the date of the file
+            file_date=$(get_file_date "$file")
+            # Compare the date of the current file with the most_recent_date
+            if [[ "$file_date" > "$most_recent_date" ]]; then
+                most_recent_file="$file"
+                most_recent_date="$file_date"
             fi
-        else
-            # For uncompressed .log files, use grep
-            if grep -q "$search_string" "$file"; then
-                # Get the date of the file
-                file_date=$(get_file_date "$file")
-                # Compare the date of the current file with the most_recent_date
-                if [[ "$file_date" > "$most_recent_date" ]]; then
-                    most_recent_file="$file"
-                    most_recent_date="$file_date"
-                fi
-            fi
-        fi
-    done < <(find "$log_search_path" -type f \( -name "*.log" -o -name "*.gz" \))
+        done < <(find "$world_path/$backup_path" -type f -name "*$search_string*.tar.gz")
+    done
 done
 
 # Check if the most recent backup is earlier or later than the most recent log file containing a player name

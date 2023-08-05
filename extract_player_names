@@ -5,6 +5,7 @@ cd /home/mcserver/minecraft/logs
 
 # Initialize an associative array to store player names and their occurrence counts
 declare -A player_counts
+declare -A player_dates
 
 # Loop through each .gz file in the directory
 for file in *.gz; do
@@ -18,12 +19,16 @@ for file in *.gz; do
     for name in $names_found; do
         player_counts["$name"]=$(( player_counts["$name"] + 1 ))
     done
+
+    for name in $names_found; do
+        player_dates["$name"]=$(date -r "$file" +%Y-%m-%d)
+    done
 done
 
 # Format the player names with occurrence counts
 formatted_names=()
 for name in "${!player_counts[@]}"; do
-    formatted_names+=("\"$name:${player_counts[$name]}\"")
+    formatted_names+=("\"$name:${player_counts[$name]}:${player_dates[$name]}\"")
 done
 
 # Join the formatted player names with spaces

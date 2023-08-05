@@ -40,7 +40,7 @@ echo "Player Name|Count|Most Recent Join Time"
 echo "${formatted_names[@]}" | tr ' ' '\n' | column -t -s '|'
 
 # Join the formatted player names with spaces
-search_strings=$(IFS=" " ; echo "${formatted_names[*]}")
+#search_strings=$(IFS=" " ; echo "${formatted_names[*]}")
 
 # Print out the formatted player names with occurrence counts
-echo "$search_strings"
+#echo "$search_strings"

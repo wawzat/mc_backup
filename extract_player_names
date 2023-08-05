@@ -3,31 +3,36 @@
 # Change the directory to the log folder
 cd /home/mcserver/minecraft/logs
 
-# Initialize an associative array to store player names and their occurrence counts
+# Initialize associative array's to store player names and their occurrence counts and most recent join times
 declare -A player_counts
+declare -A player_last_join
 
 # Loop through each .gz file in the directory
 for file in *.gz; do
-    # Use zgrep to search for player names and count their occurrences
+    # Use zgrep to search for player names and their most recent join time
     # The regular expression ' joined the game' will match lines with player names followed by ' joined the game'
     # The -o option for grep only prints the matching part of the line.
     # The -h option for zgrep suppresses filenames in the output.
-    names_found=$(zgrep -oE '[[:alnum:]_]+ joined the game' "$file" | awk '{print $1}')
+    # The -n option for zgrep prints the line number of each match.
+    # The -A option for grep prints the specified number of lines after each match.
+    # The -m option for grep limits the number of matches to 1.
+    # This combination of options allows us to extract the most recent join time for each player.
+    names_found=$(zgrep -oE '[[:alnum:]_]+ joined the game' "$file" | awk '{print $1":"$0}' | sort -t: -k1,1 -k3,3nr | awk -F: '!a[$1]++' | awk '{print $2}')
 
-    # Increment the occurrence count for each player name
-    for name in $names_found; do
+    # Increment the occurrence count and most recent join time for each player name
+    for line in $names_found; do
+        name=$(echo "$line" | awk -F: '{print $1}')
+        join_time=$(echo "$line" | awk -F: '{print $2}')
+        join_timestamp=$(date -d "$join_time" +%s)
         player_counts["$name"]=$(( player_counts["$name"] + 1 ))
+        player_last_join["$name"]="$join_timestamp"
     done
 done
 
-# Format the player names with occurrence counts
-formatted_names=()
+# Loop through each player name and print the count and most recent join time
 for name in "${!player_counts[@]}"; do
-    formatted_names+=("\"$name:${player_counts[$name]}\"")
+    count="${player_counts[$name]}"
+    last_join_timestamp="${player_last_join[$name]}"
+    last_join_date=$(date -d "@$last_join_timestamp" +"%Y-%m-%d %H:%M:%S")
+    echo "$name:$count:$last_join_date"
 done
-
-# Join the formatted player names with spaces
-search_strings=$(IFS=" " ; echo "${formatted_names[*]}")
-
-# Print out the formatted player names with occurrence counts
-echo "$search_strings"

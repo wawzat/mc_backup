@@ -25,11 +25,20 @@ for file in *.gz; do
     done
 done
 
-# Format the player names with occurrence counts
+# Format the player names, counts, and most recent join times into a table
 formatted_names=()
 for name in "${!player_counts[@]}"; do
-    formatted_names+=("\"$name:${player_counts[$name]}:${player_dates[$name]}\"")
+    count="${player_counts[$name]}"
+    last_join_timestamp="${player_last_join[$name]}"
+    last_join_date=$(date -d "@$last_join_timestamp" +"%Y-%m-%d %H:%M:%S")
+    formatted_names+=("$name|$count|$last_join_date")
 done
+
+# Print the table header
+echo "Player Name|Count|Most Recent Join Time"
+
+# Print the formatted player names, counts, and most recent join times in a table
+echo "${formatted_names[@]}" | tr ' ' '\n' | column -t -s '|'
 
 # Join the formatted player names with spaces
 search_strings=$(IFS=" " ; echo "${formatted_names[*]}")

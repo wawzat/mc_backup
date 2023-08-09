@@ -135,7 +135,7 @@ if [[ $result == *"False"* ]]; then
         # Copy the new backup to the rclone remote
         rclone copy "${backup_path}/minecraft_day0.tar.gz" "${rclone_remote}:"
     fi
-    echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S")" >> /home/mcserver/minecraft/backup/backup_log.txt
+    echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> /home/mcserver/minecraft/backup/backup_log.txt
     rclone copy /home/mcserver/minecraft/backup/backup_log.txt "${rclone_remote}:"
 else
     echo "World not modified since most recent backup, no backup required. $(printf '\r')"

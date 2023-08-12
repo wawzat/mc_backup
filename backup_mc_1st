@@ -1,6 +1,8 @@
 #!/bin/bash
 
 use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider. You must install and setup rclone for this to work.
+rclone_remote="google_drive" # The name of the rclone remote to use
+backup_path="/home/mcserver/minecraft/backup"
 script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 
 cp \
@@ -8,7 +10,7 @@ cp \
  /home/mcserver/minecraft/backup/minecraft_1st.tar.gz
 
 if [[ "$use_rclone" == "True" ]]; then
-    rclone copy /home/mcserver/minecraft/backup/minecraft_1st.tar.gz "${rclone_remote}:"
-    echo "First of month backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> /home/mcserver/minecraft/backup/backup_log.txt
-    rclone copy /home/mcserver/minecraft/backup/backup_log.txt "${rclone_remote}:"
+    rclone copy "${backup_path}/minecraft_1st.tar.gz" "${rclone_remote}:"
+    echo "First of month backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${backup_path}/backup_log.txt"
+    rclone copy "${backup_path}/backup/backup_log.txt" "${rclone_remote}:"
 fi

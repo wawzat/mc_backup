@@ -1,30 +1,36 @@
 #!/bin/bash
 # This script is intended to be run by cron for periodic backups of Minecraft data.
 # The script scans the logs for player names, the number of times they've joined and the most recent date they've joined.
-# The number of times they have joined is used to limint the number of player names to search which speeds up the search.
 # The log search is used as criteria to determine if a backup is required. If a player with more than minimum_plays has 
 #   joined since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
-# James S. Lucas - 20230804
+# Edit the config.yml file to change constants and preferences according to your needs and data structure.
+# James S. Lucas - 20230813
 
-# Configuration variables, change according to your particulars
-use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider. You must install and setup rclone for this to work.
-rclone_remote="google_drive" # The name of the rclone remote to use
-num_days=5  # Number of days to keep backups for
-minimum_plays=30 # Minimum number of game joins required to include a player name in the backup criteria
-backup_path="/home/mcserver/minecraft/backup"
-log_search_path="/home/mcserver/minecraft/logs"
-world_paths=(
-  "/home/mcserver/minecraft/world"
-  "/home/mcserver/minecraft/world_nether"
-  "/home/mcserver/minecraft/world_the_end"
-  # Add more paths here if needed
-)
+# Load the config.yml file
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
+eval $(parse_yaml config.yml)
 
 script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Change the directory to the log folder
-cd "$log_search_path"
+cd "$CONSTANTS_LOG_PATH"
 
 # Initialize an associative array to store player names and their occurrence count
 declare -A player_counts
@@ -46,7 +52,7 @@ search_strings=()
 # Loop through the associative array and filter player names based on the minimum_play count
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
-    if ((count >= minimum_plays)); then
+    if ((count >= PREFS_MINIMUM_PLAYS)); then
         search_strings+=("$name")
     fi
 done
@@ -90,16 +96,16 @@ for search_string in "${search_strings[@]}"; do
                 fi
             fi
         fi
-    done < <(find "$log_search_path" -type f \( -name "*.log" -o -name "*.gz" \))
+    done < <(find "$CONSTANTS_LOG_PATH" -type f \( -name "*.log" -o -name "*.gz" \))
 done
 
 # Check if the most recent backup is earlier or later than the most recent log file containing a player name
 if [[ "$most_recent_date" != "0000-00-00" ]]; then
     # Check if any files in /home/mcserver/minecraft/backup are newer than the most recent date
-    if [[ $(find "$backup_path" -type f -newermt "$most_recent_date" 2>/dev/null) ]]; then
-        result="True: Some files in $backup_path were created after $most_recent_date."
+    if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -newermt "$most_recent_date" 2>/dev/null) ]]; then
+        result="True: Some files in $CONSTANTS_BACKUP_PATH were created after $most_recent_date."
     else
-        result="False: No files in $backup_path were created after $most_recent_date."
+        result="False: No files in $CONSTANTS_BACKUP_PATH were created after $most_recent_date."
     fi
 else
     result="None of the search strings found in any of the .log files."
@@ -113,30 +119,30 @@ if [[ $result == *"False"* ]]; then
     sleep 3
 
     # Move the existing backup files 0 -> 1, 1 -> 2, etc.
-    for ((i=num_days-1; i>0; i--)); do
+    for ((i=PREFS_NUM_DAYS-1; i>0; i--)); do
         current_day=$((i - 1))
-        if [ -f "${backup_path}/minecraft_day${current_day}.tar.gz" ]; then
-            mv "${backup_path}/minecraft_day${current_day}.tar.gz" "${backup_path}/minecraft_day${i}.tar.gz"
+        if [ -f "${CONSTANTS_BACKUP_PATH}/minecraft_day${current_day}.tar.gz" ]; then
+            mv "${CONSTANTS_BACKUP_PATH}/minecraft_day${current_day}.tar.gz" "${CONSTANTS_BACKUP_PATH}/minecraft_day${i}.tar.gz"
         fi
     done
 
     # Create tha backup.
-    tar -cpvzf "${backup_path}/minecraft_day0.tar.gz" "${world_paths[@]}"
+    tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_WORLD_PATHS}"
 
         screen -R mc -xX stuff "save-on$(printf '\r')"
         screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
     
-    if [[ "$use_rclone" == "True" ]]; then
+    if [[ "$PREFS_USE_RCLONE" == "True" ]]; then
         # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.
         for ((i=num_days-1; i>0; i--)); do
             current_day=$((i - 1))
-            rclone moveto "${rclone_remote}:minecraft_day${current_day}.tar.gz" "${rclone_remote}:minecraft_day${i}.tar.gz"
+            rclone moveto "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${current_day}.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${i}.tar.gz"
         done
         # Copy the new backup to the rclone remote
-        rclone copy "${backup_path}/minecraft_day0.tar.gz" "${rclone_remote}:"
+        rclone copy "${CONSTANTS_BACKUJP_PATH}/minecraft_day0.tar.gz" "${PREFS_RCLONE_REMOTE}:"
     fi
-    echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${backup_path}/backup_log.txt"
-    rclone copy "${backup_path}/backup_log.txt" "${rclone_remote}:"
+    echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"
+    rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${PREFS_RCLONE_REMOTE}:"
 else
     echo "World not modified since most recent backup, no backup required. $(printf '\r')"
 fi

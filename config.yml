@@ -1,0 +1,12 @@
+## preferences
+PREFS:
+  NUM_DAYS: 5
+  MINIMUM_PLAYS: 30
+  USE_RCLONE: True
+
+## consants
+CONSTANTS:
+  RCLONE_REMOTE: google_drive
+  BACKUP_PATH: /home/mcserver/minecraft/backup
+  LOG_PATH: /home/mcserver/minecraft/logs
+  WORLD_PATHS: '/home/mcserver/minecraft/world, /home/mcserver/minecraft/world_nether, /home/mcserver/minecraft/world_the_end'

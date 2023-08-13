@@ -1,16 +1,33 @@
 #!/bin/bash
 
-use_rclone="True" # Set to True to use rclone to copy the backup to a cloud storage provider. You must install and setup rclone for this to work.
-rclone_remote="google_drive" # The name of the rclone remote to use
-backup_path="/home/mcserver/minecraft/backup"
+# Load the config.yml file
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
+eval $(parse_yaml config.yml)
+
 script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 
 cp \
- /home/mcserver/minecraft/backup/minecraft_day4.tar.gz \
- /home/mcserver/minecraft/backup/minecraft_1st.tar.gz
+ "$CONSTANTS_BACKUP_PATH/minecraft_day4.tar.gz" \
+ "$CONSTANTS_BACKUP_PATH/minecraft_1st.tar.gz"
 
-if [[ "$use_rclone" == "True" ]]; then
-    rclone copy "${backup_path}/minecraft_1st.tar.gz" "${rclone_remote}:"
-    echo "First of month backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${backup_path}/backup_log.txt"
-    rclone copy "${backup_path}/backup_log.txt" "${rclone_remote}:"
+if [[ "$PREFS_USE_RCLONE" == "True" ]]; then
+    rclone copy "${CONSTANTS_BACKUP_PATH}/minecraft_1st.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:"
+    echo "First of month backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"
+    rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
 fi

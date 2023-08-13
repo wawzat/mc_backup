@@ -9,4 +9,4 @@ CONSTANTS:
   RCLONE_REMOTE: google_drive
   BACKUP_PATH: /home/mcserver/minecraft/backup
   LOG_PATH: /home/mcserver/minecraft/logs
-  WORLD_PATHS: '/home/mcserver/minecraft/world /home/mcserver/minecraft/world_nether /home/mcserver/minecraft/world_the_end'
+  WORLD_PATHS: ''/home/mcserver/minecraft/world' '/home/mcserver/minecraft/world_nether' '/home/mcserver/minecraft/world_the_end'

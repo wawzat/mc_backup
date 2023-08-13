@@ -8,6 +8,7 @@
 # James S. Lucas - 20230813
 
 # Load the config.yml file
+# Function code credit Stefan Farestam: https://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script/21189044#21189044
 function parse_yaml {
    local prefix=$2
    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')

@@ -101,8 +101,8 @@ done
 
 # Check if the most recent backup is earlier or later than the most recent log file containing a player name
 if [[ "$most_recent_date" != "0000-00-00" ]]; then
-    # Check if any files in /home/mcserver/minecraft/backup are newer than the most recent date
-    if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -newermt "$most_recent_date" 2>/dev/null) ]]; then
+    # Check if any files in the backup folder are newer than the most recent date
+    if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -name "*.gz" -newermt "$most_recent_date" 2>/dev/null) ]]; then
         result="True: Some files in $CONSTANTS_BACKUP_PATH were created after $most_recent_date."
     else
         result="False: No files in $CONSTANTS_BACKUP_PATH were created after $most_recent_date."

@@ -10,7 +10,8 @@
  
 - Modify the configuration variables in config.yml according to your needs and directory structure.
 - The script is designed to be run as a cron job.
-- Set rclone="False" if you don't want to use rclone to also copy the files to a cloud storage provider. To use rclone you must first have it installed and configured.
+- Set USE_RCLONE="False" if you don't want to use rclone to also copy the files to a cloud storage provider. To use rclone you must first have it installed and configured.
+- Server world folders need to be prefixed with "world" (i.e. world, world_nether, world_the_end, etc.) otherwise the script will not find them.
 - Requires the use of "screen" to run the minecraft server. Screen must be named "mc" for the script to work.
 -  Sample steps to start screen and launch minecraft server (modify the java command as required for your server):
 1. > screen -S mc

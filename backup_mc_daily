@@ -135,7 +135,7 @@ if [[ $result == *"False"* ]]; then
 
     # Create tha backup.
     find_world_paths
-    tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_WORLD_PATHS}"
+    tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${WORLD_PATHS[@]}"
 
     screen -R mc -xX stuff "save-on$(printf '\r')"
     screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"

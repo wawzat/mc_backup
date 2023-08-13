@@ -1,7 +1,7 @@
 ## preferences
 PREFS:
   NUM_DAYS: 5
-  MINIMUM_PLAYS: 5
+  MINIMUM_PLAYS: 30
   USE_RCLONE: True
 
 ## consants

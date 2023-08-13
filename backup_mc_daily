@@ -129,17 +129,17 @@ if [[ $result == *"False"* ]]; then
     # Create tha backup.
     tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_WORLD_PATHS}"
 
-        screen -R mc -xX stuff "save-on$(printf '\r')"
-        screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
+    screen -R mc -xX stuff "save-on$(printf '\r')"
+    screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
     
     if [[ "$PREFS_USE_RCLONE" == "True" ]]; then
         # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.
-        for ((i=num_days-1; i>0; i--)); do
+        for ((i=PREFS_NUM_DAYS-1; i>0; i--)); do
             current_day=$((i - 1))
             rclone moveto "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${current_day}.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${i}.tar.gz"
         done
         # Copy the new backup to the rclone remote
-        rclone copy "${CONSTANTS_BACKUJP_PATH}/minecraft_day0.tar.gz" "${PREFS_RCLONE_REMOTE}:"
+        rclone copy "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${PREFS_RCLONE_REMOTE}:"
     fi
     echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"
     rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${PREFS_RCLONE_REMOTE}:"

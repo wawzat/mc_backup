@@ -68,13 +68,11 @@ get_file_date() {
     date -r "$file" +"%Y-%m-%d"
 }
 
-check_world_paths() {
-    for path in "${CONSTANTS_WORLD_PATHS[@]}"; do
-        if [ ! -d "$path" ]; then
-            echo "Directory $path does not exist, removing from backup path."
-            CONSTANTS_WORLD_PATHS=("${CONSTANTS_WORLD_PATHS[@]/$path}")
-        fi
-    done
+find_world_paths() {
+    WORLD_PATHS=()
+    while IFS= read -r -d '' dir; do
+        WORLD_PATHS+=("$dir")
+    done < <(find "$CONSTANTS_MINECRAFT_PATH" -maxdepth 1 -type d -name "world*" -print0)
 }
 
 # Search for each search string (player name) in the log files and determine the date of the most recent file containing a player name
@@ -136,7 +134,7 @@ if [[ $result == *"False"* ]]; then
     done
 
     # Create tha backup.
-    check_world_paths
+    find_world_paths
     tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_WORLD_PATHS}"
 
     screen -R mc -xX stuff "save-on$(printf '\r')"

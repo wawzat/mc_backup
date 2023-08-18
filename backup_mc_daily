@@ -27,7 +27,7 @@ function parse_yaml {
    }'
 }
 
-eval $(parse_yaml config.yml)
+eval $(parse_yaml /home/mcserver/minecraft/mc_backup/config.yml)
 
 script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 

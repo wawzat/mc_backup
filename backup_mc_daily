@@ -5,7 +5,7 @@
 #   joined since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
 # Edit the config.yml file to change constants and preferences according to your needs and data structure.
-# James S. Lucas - 20230813
+# James S. Lucas - 20230819
 
 # Load the config.yml file
 # Function code credit Stefan Farestam: https://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script/21189044#21189044
@@ -27,7 +27,7 @@ function parse_yaml {
    }'
 }
 
-eval $(parse_yaml /home/mcserver/minecraft/mc_backup/config.yml)
+eval $(parse_yaml "$(dirname "$0")/config.yml")
 
 script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
 

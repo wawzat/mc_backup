@@ -39,7 +39,7 @@ for name in "${!player_counts[@]}"; do
 done
 
 # Print the table header
-echo "Player Name     | Count | Timestamp"
+echo "Player Name     | Count | Most Recent Join Date"
 
 # Print the formatted player names, counts, and timestamps in a table
 for name in "${formatted_names[@]}"; do

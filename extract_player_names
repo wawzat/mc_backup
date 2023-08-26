@@ -16,8 +16,7 @@ for file in *.gz; do
     # The -E option for zgrep enables extended regular expressions.
     # The -z option for zgrep treats the input as null-separated instead of newline-separated.
     # The -a option for zgrep treats the input as text instead of compressed data.
-    names_found=$(zgrep -oE '\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] \[[[:alnum:]_]+\] joined the game' -a -h -z "$file" | awk '{print $3}')
-
+    names_found=$(zgrep -oE '\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] \[[[:alnum:]_]+\] joined the game' -a -h "$file" | awk '{print $3}')
     # Extract the timestamp from the log file name
     timestamp=$(echo "$file" | sed -E 's/.*([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')
 

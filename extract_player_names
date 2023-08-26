@@ -19,9 +19,11 @@ for file in *.gz; do
         if [[ $line =~ ^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]; then
             time=${line:1:8}
             timestamp=$(date -d "$(date -r "$file" +%Y-%m-%d) $time" +%s)
+            formatted_timestamp=$(date -d "@$timestamp" "+%Y-%m-%d %H:%M:%S")
             name=$(echo "$line" | grep -oE '[[:alnum:]_]+ joined the game' | awk '{print $1}')
             player_counts["$name"]=$(( player_counts["$name"] + 1 ))
             player_timestamps["$name"]=$timestamp
+            player_formatted_timestamps["$name"]=$formatted_timestamp
         fi
     done < <(zcat "$file" | grep -E '[[:alnum:]_]+ joined the game')
 
@@ -32,13 +34,14 @@ formatted_names=()
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     timestamp="${player_timestamps[$name]}"
-    formatted_names+=("$name|$count|$timestamp")
+    formatted_timestamp="${player_formatted_timestamps[$name]}"
+    formatted_names+=("$name|$count|$formatted_timestamp")
 done
 
 # Print the table header
-echo "Player Name     | Count | Timestamp"
+echo "Player Name     | Count | Timestamp (YYYY-MM-DD HH:MM:SS) | Timestamp (Unix epoch)"
 
 # Print the formatted player names, counts, and most recent join times in a table
 for name in "${formatted_names[@]}"; do
-    echo "$name"
+    echo "$name|$timestamp"
 done

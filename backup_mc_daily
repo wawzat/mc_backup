@@ -136,7 +136,7 @@ if [[ "$force_backup" == "False" ]]; then
 fi
 
 
-if [[ $result == *"False"* ] || [ $force_backup == "True"]]; then
+if [[ $result == *"False"* || $force_backup == "True"]]; then
     # Execute the backup.
     screen -R mc -xX stuff "say Server backup starting. World not saving until complete...$(printf '\r')"
     screen -R mc -xX stuff "save-off$(printf '\r')"

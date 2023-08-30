@@ -68,6 +68,7 @@ find_world_paths() {
 }
 
 if [[ "$force_backup" == "False" ]]; then
+    echo "Checking for player names in the logs... $(printf '\r')"
     # Initialize an associative array to store player names and their occurrence count
     declare -A player_counts
 

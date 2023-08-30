@@ -44,6 +44,8 @@ while getopts ":f" opt; do
     esac
 done
 
+echo "$force_backup"
+
 # Change the directory to the log folder
 cd "$CONSTANTS_LOG_PATH"
 
@@ -134,7 +136,6 @@ if [[ "$force_backup" == "False" ]]; then
         result="None of the search strings found in any of the .log files."
     fi
 fi
-
 
 if [[ $result == *"False"* || $force_backup == "True" ]]; then
     # Execute the backup.

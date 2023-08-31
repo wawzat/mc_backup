@@ -20,7 +20,7 @@ for file in *.gz; do
             time=${line:1:8}
             name=$(echo "$line" | grep -oE '[[:alnum:]_]+ joined the game' | awk '{print $1}')
             player_counts["$name"]=$(( player_counts["$name"] + 1 ))
-            player_last_join_times["$name"]=$(date -d "$(date -r "$file" +%Y-%m-%d) $time" +%Y-%m-%d)
+            player_last_join_times["$name"]=$(date -d "$(date -r "$file" +%Y-%m-%d) $time" "+%Y-%m-%d %H:%M:%S")
         fi
     done < <(zcat "$file" | grep -E '[[:alnum:]_]+ joined the game')
 

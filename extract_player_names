@@ -32,6 +32,7 @@ formatted_names=()
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     last_join_time="${player_last_join_times[$name]}"
+    last_join_epoch_time="${player_last_join_epoch_times[$name]}"
     formatted_names+=("$name     | $count | $last_join_time| $player_last_join_epoch_times")
 done
 

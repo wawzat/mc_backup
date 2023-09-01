@@ -21,6 +21,7 @@ for file in *.gz; do
             name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
             player_counts["$name"]=$(( player_counts["$name"] + 1 ))
             player_last_join_times["$name"]=$(date -d "$(date -r "$file" +%Y-%m-%d) $time" "+%Y-%m-%d %H:%M:%S")
+            player_last_join_epoch_times["$name"]=$(date -d "$(date -r "$file" +%Y-%m-%d) $time" "+%s")
         fi
     done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
 
@@ -31,7 +32,7 @@ formatted_names=()
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     last_join_time="${player_last_join_times[$name]}"
-    formatted_names+=("$name|$count|$last_join_time")
+    formatted_names+=("$name     | $count | $last_join_time| $player_last_join_epoch_times")
 done
 
 # Print the table header

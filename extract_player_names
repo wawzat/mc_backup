@@ -35,13 +35,13 @@ for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     last_join_time="${player_last_join_times[$name]}"
     last_join_epoch_time="${player_last_join_epoch_times[$name]}"
-    formatted_names+=("$name     | $count | $last_join_time| $last_join_epoch_time")
+    formatted_names+=("$name|$count|$last_join_time|$last_join_epoch_time")
 done
 
 # Print the table header
-echo "Player Name     | Count | Most Recent Join Time | Epoch Time"
+echo "Player Name|Count|Most Recent Join Time|Epoch Time"
 
 # Print the formatted player names, counts, and most recent join times in a table
 for name in "${formatted_names[@]}"; do
     echo "$name"
-done
+done | column -t -s '|'

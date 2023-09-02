@@ -6,11 +6,12 @@ cd /home/mcserver/minecraft/logs
 # Initialize an associative array to store player names and their occurrence counts
 declare -A player_counts
 declare -A player_last_join_times
+declare -A player_last_join_epoch_times
 
 # Loop through each .gz file in the directory
 for file in *.gz; do
     # Use zgrep to search for player names and count their occurrences
-    # The regular expression ' joined the game' will match lines with player names followed by ' joined the game'
+    # The regular expression ' left the game' will match lines with player names followed by ' left the game'
     # The -o option for grep only prints the matching part of the line.
     # The -h option for zgrep suppresses filenames in the output.
     # The -E option for zgrep enables extended regular expressions.
@@ -20,8 +21,9 @@ for file in *.gz; do
             time=${line:1:8}
             name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
             player_counts["$name"]=$(( player_counts["$name"] + 1 ))
-            player_last_join_times["$name"]=$(date -d "$(date -r "$file" +%Y-%m-%d) $time" "+%Y-%m-%d %H:%M:%S")
-            player_last_join_epoch_times["$name"]=$(date -d "$(date -r "$file" +%Y-%m-%d) $time" "+%s")
+            file_mod_time=$(TZ=UTC stat -c %y "$file")
+            player_last_join_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%Y-%m-%d %H:%M:%S")
+            player_last_join_epoch_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%s")
         fi
     done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
 
@@ -37,7 +39,7 @@ for name in "${!player_counts[@]}"; do
 done
 
 # Print the table header
-echo "Player Name     | Count | Most Recent Join Time"
+echo "Player Name     | Count | Most Recent Join Time | Epoch Time"
 
 # Print the formatted player names, counts, and most recent join times in a table
 for name in "${formatted_names[@]}"; do

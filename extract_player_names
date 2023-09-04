@@ -34,15 +34,6 @@ done
 # Delete the compressed copy of latest.log
 rm latest.log.gz
 
-# Find the most recent join time
-most_recent_join_epoch_time=0
-for epoch_time in "${player_last_join_epoch_times[@]}"; do
-    if (( epoch_time > most_recent_join_epoch_time )); then
-        most_recent_join_epoch_time=$epoch_time
-    fi
-done
-most_recent_join_datetime=$(date -d "@$most_recent_join_epoch_time" "+%Y-%m-%d %H:%M:%S")
-
 # Format the player names, counts, and most recent join times into a table
 formatted_names=()
 for name in "${!player_counts[@]}"; do
@@ -59,6 +50,3 @@ echo "Player Name|Count|Most Recent Join Time|Epoch Time"
 for name in "${formatted_names[@]}"; do
     echo "$name"
 done | column -t -s '|'
-
-# Print the most recent join time
-echo "Most recent join time: $most_recent_join_datetime"

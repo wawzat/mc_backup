@@ -1,4 +1,5 @@
 #!/bin/bash
+# James S. Lucas - 20230904
 
 # Change the directory to the log folder
 cd /home/mcserver/minecraft/logs

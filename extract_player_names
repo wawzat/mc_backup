@@ -1,5 +1,4 @@
 #!/bin/bash
-# James S. Lucas - 20230904
 
 # Change the directory to the log folder
 cd /home/mcserver/minecraft/logs
@@ -21,13 +20,13 @@ for file in *.gz; do
         if [[ $line =~ ^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]; then
             time=${line:1:8}
             name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
-            name="_$name"
             player_counts["$name"]=$(( player_counts["$name"] + 1 ))
             file_mod_time=$(TZ=UTC stat -c %y "$file")
             player_last_join_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%Y-%m-%d %H:%M:%S")
             player_last_join_epoch_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%s")
         fi
-    done < <(zcat | grep -E '[[:alnum:]_]+ left the game')
+    done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
+
 done
 
 # Format the player names, counts, and most recent join times into a table

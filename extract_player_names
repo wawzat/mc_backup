@@ -57,12 +57,12 @@ for name in "${!player_counts[@]}"; do
 done
 
 # Print the table header
-printf "%-15s | %-5s | %-20s | %-10s\n" "Player Name" "Count" "Most Recent Join Time" "Epoch Time"
+echo "Player Name|Count|Most Recent Join Time|Epoch Time"
 
 # Print the formatted player names, counts, and most recent join times in a table
 for name in "${formatted_names[@]}"; do
-    printf "%-15s | %-5s | %-20s | %-10s\n" $(echo "$name" | tr '|' ' ')
-done
+    echo "$name"
+done | column -t -s '|'
 
 # Print the most recent join datetime
 echo "Most recent join datetime for players with at least 30 counts: $most_recent_join_datetime"

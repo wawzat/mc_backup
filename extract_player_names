@@ -10,7 +10,7 @@ declare -A player_last_join_times
 declare -A player_last_join_epoch_times
 
 # Loop through each .gz file in the directory
-for file in *.gz latest.log; do
+for file in *.gz; do
     # Use zgrep to search for player names and count their occurrences
     # The regular expression ' left the game' will match lines with player names followed by ' left the game'
     # The -o option for grep only prints the matching part of the line.
@@ -27,7 +27,7 @@ for file in *.gz latest.log; do
             player_last_join_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%Y-%m-%d %H:%M:%S")
             player_last_join_epoch_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%s")
         fi
-    done < <(zcat "$file" 2>/dev/null || cat "$file" | grep -E '[[:alnum:]_]+ left the game')
+    done < <(zcat | grep -E '[[:alnum:]_]+ left the game')
 done
 
 # Format the player names, counts, and most recent join times into a table

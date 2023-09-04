@@ -34,19 +34,18 @@ done
 # Delete the compressed copy of latest.log
 rm latest.log.gz
 
-# Format the player names, counts, and most recent join times into a table
-formatted_names=()
+# Find the latest player_last_join_epoch_time for player names with a count of at least 30
+most_recent_join_epoch_time=0
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
-    last_join_time="${player_last_join_times[$name]}"
     last_join_epoch_time="${player_last_join_epoch_times[$name]}"
-    formatted_names+=("$name|$count|$last_join_time|$last_join_epoch_time")
+    if (( count >= 30 )) && (( last_join_epoch_time > most_recent_join_epoch_time )); then
+        most_recent_join_epoch_time="$last_join_epoch_time"
+    fi
 done
 
-# Print the table header
-echo "Player Name|Count|Most Recent Join Time|Epoch Time"
+# Convert the most recent join epoch time to a human-readable format
+most_recent_join_datetime=$(date -d "@$most_recent_join_epoch_time" "+%Y-%m-%d %H:%M:%S")
 
-# Print the formatted player names, counts, and most recent join times in a table
-for name in "${formatted_names[@]}"; do
-    echo "$name"
-done | column -t -s '|'
+# Print the most recent join datetime
+echo "Most recent join datetime for players with at least 30 counts: $most_recent_join_datetime"

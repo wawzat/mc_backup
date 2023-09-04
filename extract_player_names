@@ -8,6 +8,9 @@ declare -A player_counts
 declare -A player_last_join_times
 declare -A player_last_join_epoch_times
 
+# Compress the latest.log file
+gzip -c latest.log > latest.log.gz
+
 # Loop through each .gz file in the directory
 for file in *.gz; do
     # Use zgrep to search for player names and count their occurrences
@@ -26,8 +29,10 @@ for file in *.gz; do
             player_last_join_epoch_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%s")
         fi
     done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
-
 done
+
+# Delete the compressed copy of latest.log
+rm latest.log.gz
 
 # Format the player names, counts, and most recent join times into a table
 formatted_names=()

@@ -34,11 +34,13 @@ rm latest.log.gz
 
 # Find the latest player_last_left_epoch_time for player names with a count of at least 30
 most_recent_left_epoch_time=0
+most_recent_left_name=" "
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     last_left_epoch_time="${player_last_left_epoch_times[$name]}"
     if (( count >= 30 )) && (( last_left_epoch_time > most_recent_left_epoch_time )); then
         most_recent_left_epoch_time="$last_left_epoch_time"
+        most_recent_left_name="$name"
     fi
 done
 
@@ -63,4 +65,4 @@ for name in "${formatted_names[@]}"; do
 done | column -t -s '|'
 
 # Print the most recent left datetime
-echo "Most recent left datetime for players with at least 30 counts: $most_recent_left_datetime"
+echo "Most recent left datetime for player with at least 30 counts is: $most_recent_left_name at $most_recent_left_datetime"

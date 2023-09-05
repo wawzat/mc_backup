@@ -110,11 +110,13 @@ if [[ "$force_backup" == "False" ]]; then
 
     # Check if the most recent backup is earlier or later than the most recent log file containing a player name
     if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -name "*.gz" -newermt "$most_recent_join_epoch_time" 2>/dev/null) ]]; then
-        result="True: Some files in $CONSTANTS_BACKUP_PATH were created after $most_recent_date."
+        result="True: Some files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_epoch_time."
     else
-        result="False: No files in $CONSTANTS_BACKUP_PATH were created after $most_recent_date."
+        result="False: No files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_epoch_time."
     fi
 fi
+
+echo "$result"
 
 if [[ $result == *"False"* || $force_backup == "True" ]]; then
     # Execute the backup.

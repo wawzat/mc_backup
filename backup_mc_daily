@@ -77,6 +77,8 @@ if [[ "$force_backup" == "False" ]]; then
 
     # Loop through each .gz file in the directory
     for file in *.gz; do
+        # Extract the date from the filename
+        file_date=$(echo "$file" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
         # Use zgrep to search for player names and count their occurrences
         # The regular expression ' left the game' will match lines with player names followed by ' left the game'
         # The -o option for grep only prints the matching part of the line.
@@ -88,9 +90,8 @@ if [[ "$force_backup" == "False" ]]; then
                 time=${line:1:8}
                 name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
                 player_counts["$name"]=$(( player_counts["$name"] + 1 ))
-                file_mod_time=$(TZ=UTC stat -c %y "$file")
-                player_last_join_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%Y-%m-%d %H:%M:%S")
-                player_last_join_epoch_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%s")
+                player_last_join_times["$name"]=$(date -d "$file_date $time" "+%Y-%m-%d %H:%M:%S")
+                player_last_join_epoch_times["$name"]=$(date -d "$file_date $time" "+%s")
             fi
         done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
     done

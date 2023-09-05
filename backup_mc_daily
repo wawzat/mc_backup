@@ -57,7 +57,7 @@ find_world_paths() {
 if [[ "$force_backup" == "False" ]]; then
     # Initialize an associative array to store player names and their occurrence count
     declare -A player_counts
-    declare -A player_last_left_times
+    declare -A player_last_left_epoch_times
 
     # Compress the latest.log file so it can be searched with zcat below
     gzip -c latest.log > latest.log.gz
@@ -74,7 +74,8 @@ if [[ "$force_backup" == "False" ]]; then
                 time=${line:1:8}
                 name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
                 player_counts["$name"]=$(( player_counts["$name"] + 1 ))
-                player_last_left_times["$name"]=$(date -d "$file_date $time" "+%Y-%m-%d %H:%M:%S")
+                player_last_left_epoch_times["$name"]=$(date -d "$file_date $time" "+%s")
+
             fi
         done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
     done
@@ -86,11 +87,13 @@ if [[ "$force_backup" == "False" ]]; then
     most_recent_left_time=0
     for name in "${!player_counts[@]}"; do
         count="${player_counts[$name]}"
-        last_left_time="${player_last_left_times[$name]}"
-        if (( count >= PREFS_MINIMUM_PLAYS )) && (( last_left_time > most_recent_left_time )); then
-            most_recent_left_time="$last_left_time"
+        last_left_epoch_time="${player_last_left_epoch_times[$name]}"
+        if (( count >= PREFS_MINIMUM_PLAYS )) && (( last_left_epoch_time > most_recent_left_time )); then
+            most_recent_left_time=$last_left_epoch_time
         fi
     done
+
+    most_recent_left_time=$(date -d "@$most_recent_left_time" "+%Y-%m-%d %H:%M:%S")
 
     # Check if the most recent backup is earlier or later than the most recent time a player with at least PREFS_MINIMUM_PLAYS has left the game
     if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -name "*.gz" -newermt "$most_recent_left_time" 2>/dev/null) ]]; then

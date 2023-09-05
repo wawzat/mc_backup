@@ -108,11 +108,14 @@ if [[ "$force_backup" == "False" ]]; then
         fi
     done
 
+    # Convert the most recent join epoch time to a human-readable format
+    most_recent_join_datetime=$(date -d "@$most_recent_join_epoch_time" "+%Y-%m-%d %H:%M:%S")
+
     # Check if the most recent backup is earlier or later than the most recent log file containing a player name
-    if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -name "*.gz" -newermt "$most_recent_join_epoch_time" 2>/dev/null) ]]; then
-        result="True: Some files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_epoch_time."
+    if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -name "*.gz" -newermt "$most_recent_join_datetime" 2>/dev/null) ]]; then
+        result="True: Some files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_datetime."
     else
-        result="False: No files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_epoch_time."
+        result="False: No files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_datetime."
     fi
 fi
 

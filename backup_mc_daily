@@ -1,53 +1,159 @@
 #!/bin/bash
+# This script is intended to be run by cron for periodic backups of Minecraft data.
+# The script scans the logs for player names, the number of times they've joined and the most recent date they've joined.
+# The log search is used as criteria to determine if a backup is required. If a player with more than minimum_plays has 
+#   joined since the last backup then a backup is required.
+# Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
+# Edit the config.yml file to change constants and preferences according to your needs and data structure.
+# James S. Lucas - 20230904
+
+# Load the config.yml file
+# parse_yaml function code credit Stefan Farestam: https://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script/21189044#21189044
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e 's|`||g;s|\$||g;' \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
+eval $(parse_yaml /home/mcserver/minecraft/mc_backup/config.yml)
+
+script_start_time=$(date +"%Y-%m-%d %H:%M:%S")
+
+force_backup="False"
+
+# Process command line arguments
+while getopts ":f" opt; do
+    case $opt in
+        f)
+            force_backup="True"
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            ;;
+    esac
+done
 
 # Change the directory to the log folder
-cd /home/mcserver/minecraft/logs
+cd "$CONSTANTS_LOG_PATH"
 
-# Initialize an associative array to store player names and their occurrence counts
-declare -A player_counts
-declare -A player_last_join_times
-declare -A player_last_join_epoch_times
+# Initialize variables to store the most recent file and date
+most_recent_file=""
+most_recent_date="0000-00-00"  # Initialize with a date in the past
 
-# Compress the latest.log file
-gzip -c latest.log > latest.log.gz
+# Function to get the modification date of a file in "YYYY-MM-DD" format
+get_file_date() {
+    local file="$1"
+    # Get the date of the file and format it as "YYYY-MM-DD"
+    date -r "$file" +"%Y-%m-%d"
+}
 
-# Loop through each .gz file in the directory
-for file in *.gz; do
-    # Extract the date from the filename
-    date=$(echo "$file" | sed -E 's/([0-9]{4}-[0-9]{2}-[0-9]{2})-[0-9]+\.log\.gz/\1/')
+find_world_paths() {
+    WORLD_PATHS=()
+    while IFS= read -r -d '' dir; do
+        WORLD_PATHS+=("$dir")
+    done < <(find "$CONSTANTS_MINECRAFT_PATH" -maxdepth 1 -type d -name "world*" -print0)
+}
 
-    # Use zgrep to search for player names and count their occurrences
-    # The regular expression ' left the game' will match lines with player names followed by ' left the game'
-    # The -o option for grep only prints the matching part of the line.
-    # The -h option for zgrep suppresses filenames in the output.
-    # The -E option for zgrep enables extended regular expressions.
-    # The -e option for date specifies the input format.
-    while read -r line; do
-        if [[ $line =~ ^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]; then
-            time=${line:1:8}
-            name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
-            player_counts["$name"]=$(( player_counts["$name"] + 1 ))
-            player_last_join_times["$name"]=$(date -d "$date $time" "+%Y-%m-%d %H:%M:%S")
-            player_last_join_epoch_times["$name"]=$(date -d "$date $time" "+%s")
+if [[ "$force_backup" == "False" ]]; then
+    # Initialize an associative array to store player names and their occurrence count
+    declare -A player_counts
+    declare -A player_last_join_times
+    declare -A player_last_join_epoch_times
+
+    # Compress the latest.log file
+    gzip -c latest.log > latest.log.gz
+
+    # Loop through each .gz file in the directory
+    for file in *.gz; do
+        # Use zgrep to search for player names and count their occurrences
+        # The regular expression ' left the game' will match lines with player names followed by ' left the game'
+        # The -o option for grep only prints the matching part of the line.
+        # The -h option for zgrep suppresses filenames in the output.
+        # The -E option for zgrep enables extended regular expressions.
+        # The -e option for date specifies the input format.
+        while read -r line; do
+            if [[ $line =~ ^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]; then
+                time=${line:1:8}
+                name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
+                player_counts["$name"]=$(( player_counts["$name"] + 1 ))
+                file_mod_time=$(TZ=UTC stat -c %y "$file")
+                player_last_join_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%Y-%m-%d %H:%M:%S")
+                player_last_join_epoch_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%s")
+            fi
+        done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
+    done
+
+    # Delete the compressed copy of latest.log
+    rm latest.log.gz
+
+    # Find the latest player_last_join_epoch_time for player names with a count of at least 30
+    most_recent_join_epoch_time=0
+    for name in "${!player_counts[@]}"; do
+        count="${player_counts[$name]}"
+        last_join_epoch_time="${player_last_join_epoch_times[$name]}"
+        if (( count >= 30 )) && (( last_join_epoch_time > most_recent_join_epoch_time )); then
+            most_recent_join_epoch_time="$last_join_epoch_time"
         fi
-    done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
-done
+    done
 
-# Delete the compressed copy of latest.log
-rm latest.log.gz
+    # Convert the most recent join epoch time to a human-readable format
+    most_recent_join_datetime=$(date -d "@$most_recent_join_epoch_time" "+%Y-%m-%d %H:%M:%S")
 
-# Find the latest player_last_join_epoch_time for player names with a count of at least 30
-most_recent_join_epoch_time=0
-for name in "${!player_counts[@]}"; do
-    count="${player_counts[$name]}"
-    last_join_epoch_time="${player_last_join_epoch_times[$name]}"
-    if (( count >= 30 )) && (( last_join_epoch_time > most_recent_join_epoch_time )); then
-        most_recent_join_epoch_time="$last_join_epoch_time"
+    # Check if the most recent backup is earlier or later than the most recent log file containing a player name
+    if [[ $(find "$CONSTANTS_BACKUP_PATH" -type f -name "*.gz" -newermt "$most_recent_join_datetime" 2>/dev/null) ]]; then
+        result="True: Some files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_datetime."
+    else
+        result="False: No files in $CONSTANTS_BACKUP_PATH were created after $most_recent_join_datetime."
     fi
-done
+fi
 
-# Convert the most recent join epoch time to a human-readable format
-most_recent_join_datetime=$(date -d "@$most_recent_join_epoch_time" "+%Y-%m-%d %H:%M:%S")
+echo "$result"
 
-# Print the most recent join datetime
-echo "Most recent join datetime for players with at least 30 counts: $most_recent_join_datetime"
+if [[ $result == *"False"* || $force_backup == "True" ]]; then
+    # Execute the backup.
+    screen -R mc -xX stuff "say Server backup starting. World not saving until complete...$(printf '\r')"
+    screen -R mc -xX stuff "save-off$(printf '\r')"
+    screen -R mc -xX stuff "save-all$(printf '\r')"
+    sleep 3
+
+    # Move the existing backup files 0 -> 1, 1 -> 2, etc.
+    for ((i=PREFS_NUM_DAYS-1; i>0; i--)); do
+        current_day=$((i - 1))
+        if [ -f "${CONSTANTS_BACKUP_PATH}/minecraft_day${current_day}.tar.gz" ]; then
+            mv "${CONSTANTS_BACKUP_PATH}/minecraft_day${current_day}.tar.gz" "${CONSTANTS_BACKUP_PATH}/minecraft_day${i}.tar.gz"
+        fi
+    done
+
+    # Create tha backup.
+    find_world_paths
+    tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${WORLD_PATHS[@]}"
+
+    screen -R mc -xX stuff "save-on$(printf '\r')"
+    screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
+    
+    if [[ "$PREFS_USE_RCLONE" == "True" ]]; then
+        # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.
+        for ((i=PREFS_NUM_DAYS-1; i>0; i--)); do
+            current_day=$((i - 1))
+            rclone moveto "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${current_day}.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${i}.tar.gz"
+        done
+        # Copy the new backup to the rclone remote
+        rclone copy "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:"
+    fi
+    echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"
+    rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
+else
+    echo "World not modified since most recent backup, no backup required. $(printf '\r')"
+fi

@@ -5,28 +5,26 @@ cd /home/mcserver/minecraft/logs
 
 # Initialize an associative array to store player names and their occurrence counts
 declare -A player_counts
-declare -A player_last_join_times
-declare -A player_last_join_epoch_times
+declare -A player_last_left_times
+declare -A player_last_left_epoch_times
 
 # Compress the latest.log file
 gzip -c latest.log > latest.log.gz
 
 # Loop through each .gz file in the directory
 for file in *.gz; do
-    # Use zgrep to search for player names and count their occurrences
+    # Use zcat to search for player names and count their occurrences
     # The regular expression ' left the game' will match lines with player names followed by ' left the game'
-    # The -o option for grep only prints the matching part of the line.
-    # The -h option for zgrep suppresses filenames in the output.
-    # The -E option for zgrep enables extended regular expressions.
-    # The -e option for date specifies the input format.
+    # The date is parsed from the log filename, the time is parsed from the log line
+    # Extract the date from the filename
+    file_date=$(echo "$file" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
     while read -r line; do
         if [[ $line =~ ^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]; then
             time=${line:1:8}
             name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
             player_counts["$name"]=$(( player_counts["$name"] + 1 ))
-            file_mod_time=$(TZ=UTC stat -c %y "$file")
-            player_last_join_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%Y-%m-%d %H:%M:%S")
-            player_last_join_epoch_times["$name"]=$(date -d "$(echo "$file_mod_time" | cut -d' ' -f1) $time" "+%s")
+            player_last_left_times["$name"]=$(date -d "$file_date $time" "+%Y-%m-%d %H:%M:%S")
+            player_last_left_epoch_times["$name"]=$(date -d "$file_date $time" "+%s")
         fi
     done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
 done
@@ -34,35 +32,35 @@ done
 # Delete the compressed copy of latest.log
 rm latest.log.gz
 
-# Find the latest player_last_join_epoch_time for player names with a count of at least 30
-most_recent_join_epoch_time=0
+# Find the latest player_last_left_epoch_time for player names with a count of at least 30
+most_recent_left_epoch_time=0
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
-    last_join_epoch_time="${player_last_join_epoch_times[$name]}"
-    if (( count >= 30 )) && (( last_join_epoch_time > most_recent_join_epoch_time )); then
-        most_recent_join_epoch_time="$last_join_epoch_time"
+    last_left_epoch_time="${player_last_left_epoch_times[$name]}"
+    if (( count >= 30 )) && (( last_left_epoch_time > most_recent_left_epoch_time )); then
+        most_recent_left_epoch_time="$last_left_epoch_time"
     fi
 done
 
-# Convert the most recent join epoch time to a human-readable format
-most_recent_join_datetime=$(date -d "@$most_recent_join_epoch_time" "+%Y-%m-%d %H:%M:%S")
+# Convert the most recent left epoch time to a human-readable format
+most_recent_left_datetime=$(date -d "@$most_recent_left_epoch_time" "+%Y-%m-%d %H:%M:%S")
 
-# Format the player names, counts, and most recent join times into a table
+# Format the player names, counts, and most recent left times into a table
 formatted_names=()
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
-    last_join_time="${player_last_join_times[$name]}"
-    last_join_epoch_time="${player_last_join_epoch_times[$name]}"
-    formatted_names+=("$name|$count|$last_join_time|$last_join_epoch_time")
+    last_left_time="${player_last_left_times[$name]}"
+    last_left_epoch_time="${player_last_left_epoch_times[$name]}"
+    formatted_names+=("$name|$count|$last_left_time|$last_left_epoch_time")
 done
 
 # Print the table header
-echo "Player Name|Count|Most Recent Join Time|Epoch Time"
+echo "Player Name|Count|Most Recent left Time|Epoch Time"
 
-# Print the formatted player names, counts, and most recent join times in a table
+# Print the formatted player names, counts, and most recent left times in a table
 for name in "${formatted_names[@]}"; do
     echo "$name"
 done | column -t -s '|'
 
-# Print the most recent join datetime
-echo "Most recent join datetime for players with at least 30 counts: $most_recent_join_datetime"
+# Print the most recent left datetime
+echo "Most recent left datetime for players with at least 30 counts: $most_recent_left_datetime"

@@ -5,7 +5,7 @@
 #   left the game since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
 # Edit the config.yml file to change constants and preferences according to your needs and data structure.
-# James S. Lucas - 20230905
+# James S. Lucas - 20240605
 
 # Load the config.yml file
 # parse_yaml function code credit Stefan Farestam: https://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script/21189044#21189044
@@ -133,9 +133,16 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
         done
         # Copy the new backup to the rclone remote
         rclone copy "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:"
+        rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
+        # Unip the most recent log archive and copy it and latest.log to the rclone remote
+        cd "$CONSTANTS_LOG_PATH"
+        gunzip $(ls -t *.log.gz | head -1)
+        mv "${CONSTANTS_LOG_PATH}/$(ls -t *.log | head -1)" "${CONSTANTS_LOG_PATH}/most_recent_log_archive.log"
+        rclone copy "${CONSTANTS_LOG_PATH}/most_recent_log_archive.log" "${CONSTANTS_RCLONE_REMOTE}:"
+        rm "${CONSTANTS_LOG_PATH}/most_recent_log_archive.log"
+        rclone copy "${CONSTANTS_LOG_PATH}/latest.log" "${CONSTANTS_RCLONE_REMOTE}:"
     fi
     echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"
-    rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
 else
     echo "World not modified since most recent backup, no backup required. $(printf '\r')"
 fi

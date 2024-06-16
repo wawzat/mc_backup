@@ -10,3 +10,4 @@ CONSTANTS:
   MINECRAFT_PATH: /home/mcserver/minecraft
   BACKUP_PATH: /home/mcserver/minecraft/backup
   LOG_PATH: /home/mcserver/minecraft/logs
+  TEMP_LOG_PATH: /home/mcserver/minecraft/temp_logs

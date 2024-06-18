@@ -137,15 +137,15 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
         # Unip the most recent log archive and copy it and latest.log to the rclone remote
         last_file=$(ls -t *.log.gz | head -1)
         cp "${last_file}" "${CONSTANTS_TEMP_LOG_PATH}/"
+        cp latest.log "${CONSTANTS_TEMP_LOG_PATH}/latest_log.txt"
         cd "${CONSTANTS_TEMP_LOG_PATH}"
         gunzip "${last_file}"
         unzipped_file=$(ls -t *.log | head -1)
         # Insert the filename at the beginning of the text file
         sed -i "1i${last_file}" "${unzipped_file}" 
         rclone moveto "${CONSTANTS_TEMP_LOG_PATH}/$(ls -t *.log | head -1)" "${CONSTANTS_RCLONE_REMOTE}:most_recent_log_archive.txt"
+        rclone moveto latest_log.txt "${CONSTANTS_RCLONE_REMOTE}:"
         # rm $(ls -t 20*.log | head -1)
-        cd "${CONSTANTS_LOG_PATH}"
-        rclone copy "${CONSTANTS_LOG_PATH}/latest.log" "${CONSTANTS_RCLONE_REMOTE}/latest_log.txt"
     fi
     echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"
 else

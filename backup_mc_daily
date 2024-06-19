@@ -144,7 +144,7 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
         # Insert the filename at the beginning of the text file
         sed -i "1i${last_file}" "${unzipped_file}" 
         rclone moveto "${CONSTANTS_TEMP_LOG_PATH}/$(ls -t *.log | head -1)" "${CONSTANTS_RCLONE_REMOTE}:most_recent_log_archive.txt"
-        rclone moveto latest_log.txt "${CONSTANTS_RCLONE_REMOTE}:"
+        rclone moveto "latest_log.txt" "${CONSTANTS_RCLONE_REMOTE}:latest_log.txt"
         # rm $(ls -t 20*.log | head -1)
     fi
     echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"

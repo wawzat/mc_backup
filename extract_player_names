@@ -19,9 +19,13 @@ for file in *.gz; do
     # Extract the date from the filename
     file_date=$(echo "$file" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
     while read -r line; do
-        if [[ $line =~ ^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]; then
-            time=${line:1:8}
-            name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
+        if [[ $line =~ \[([0-9]{2}:[0-9]{2}:[0-9]{2})\] ]]; then
+            time=${BASH_REMATCH[1]}
+        elif [[ $line =~ \[([0-9]{2}[A-Za-z]{3}[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3})\] ]]; then
+            time=${BASH_REMATCH[1]:10:8}
+        fi
+        name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
+        if [[ -n "$name" ]]; then
             player_counts["$name"]=$(( player_counts["$name"] + 1 ))
             player_last_left_times["$name"]=$(date -d "$file_date $time" "+%Y-%m-%d %H:%M:%S")
             player_last_left_epoch_times["$name"]=$(date -d "$file_date $time" "+%s")
@@ -32,37 +36,4 @@ done
 # Delete the compressed copy of latest.log
 rm latest.log.gz
 
-# Find the latest player_last_left_epoch_time for player names with a count of at least 30
-most_recent_left_epoch_time=0
-most_recent_left_name=" "
-for name in "${!player_counts[@]}"; do
-    count="${player_counts[$name]}"
-    last_left_epoch_time="${player_last_left_epoch_times[$name]}"
-    if (( count >= 30 )) && (( last_left_epoch_time > most_recent_left_epoch_time )); then
-        most_recent_left_epoch_time="$last_left_epoch_time"
-        most_recent_left_name="$name"
-    fi
-done
-
-# Convert the most recent left epoch time to a human-readable format
-most_recent_left_datetime=$(date -d "@$most_recent_left_epoch_time" "+%Y-%m-%d %H:%M:%S")
-
-# Format the player names, counts, and most recent left times into a table
-formatted_names=()
-for name in "${!player_counts[@]}"; do
-    count="${player_counts[$name]}"
-    last_left_time="${player_last_left_times[$name]}"
-    last_left_epoch_time="${player_last_left_epoch_times[$name]}"
-    formatted_names+=("$name|$count|$last_left_time|$last_left_epoch_time")
-done
-
-# Print the table header
-echo "Player Name|Count|Most Recent left Time|Epoch Time"
-
-# Print the formatted player names, counts, and most recent left times in a table
-for name in "${formatted_names[@]}"; do
-    echo "$name"
-done | column -t -s '|'
-
-# Print the most recent left datetime
-echo "Most recent left datetime for player with at least 30 counts is: $most_recent_left_name at $most_recent_left_datetime"
+# Find the latest player_last_left_epoch_time for player names w

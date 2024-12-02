@@ -36,7 +36,7 @@ gzip -c latest.log > latest.log.gz
 # Find and sort the .gz files
 log_files=$(find . -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.log.gz' | sort)
 
-# Loop through each .gz file in the directory
+# Loop through each YYYY-MM-DD-X.log.gz file in the directory and latest.log.gz
 for file in $log_files latest.log.gz; do
     # Use zcat to search for player names and count their occurrences
     # The regular expression ' left the game' will match lines with player names followed by ' left the game'

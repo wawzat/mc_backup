@@ -33,9 +33,11 @@ declare -A player_last_left_epoch_times
 # Compress the latest.log file
 gzip -c latest.log > latest.log.gz
 
+# Find and sort the .gz files
+log_files=$(find . -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.log.gz' | sort)
+
 # Loop through each .gz file in the directory
-for file in latest.log.gz $(find . -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.log.gz'); do
-    echo "Processing file: $file"  # Debugging line to see which files are being processed
+for file in $log_files latest.log.gz; do
     # Use zcat to search for player names and count their occurrences
     # The regular expression ' left the game' will match lines with player names followed by ' left the game'
     # The date is parsed from the log filename, the time is parsed from the log line

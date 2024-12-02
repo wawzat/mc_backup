@@ -34,7 +34,7 @@ declare -A player_last_left_epoch_times
 gzip -c latest.log > latest.log.gz
 
 # Loop through each .gz file in the directory
-for file in latest.log.gz [0-9]{4}-[0-9]{2}-[0-9]{2}-*.log.gz; do
+for file in latest.log.gz $(find . -name '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-*.log.gz'); do
     # Use zcat to search for player names and count their occurrences
     # The regular expression ' left the game' will match lines with player names followed by ' left the game'
     # The date is parsed from the log filename, the time is parsed from the log line

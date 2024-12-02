@@ -88,10 +88,10 @@ done
 # Print the table header
 echo "Player Name|Count|Most Recent left Time|Epoch Time"
 
-# Print the formatted player names, counts, and most recent left times in a table
+# Print the formatted player names, counts, and most recent left times in a table sorted by count in descending order
 for name in "${formatted_names[@]}"; do
     echo "$name"
-done | column -t -s '|'
+done | sort -t '|' -k2,2nr | column -t -s '|'
 
 # Print the most recent left datetime
-echo "Most recent left datetime for player with at least 30 counts is: $most_recent_left_name at $most_recent_left_datetime"
+echo "Most recent left datetime for player with at least $PREFS_MINIMUM_PLAYS counts is: $most_recent_left_name at $most_recent_left_datetime"

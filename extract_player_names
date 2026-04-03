@@ -133,13 +133,13 @@ for name in "${!player_counts[@]}"; do
     formatted_names+=("$name|$count|$total_play_time|$last_left_time")
 done
 
-# Print the table header
-echo "Player Name|Count|Total Play Time|Most Recent left Time"
-
-# Print the formatted player names, counts, and most recent left times in a table
-for name in "${formatted_names[@]}"; do
-    echo "$name"
-done | sort -t '|' -k2,2nr | column -t -s '|'
+# Print the header and formatted player rows in a single aligned table
+{
+    echo "Player Name|Count|Total Play Time|Most Recent Left Time"
+    for name in "${formatted_names[@]}"; do
+        echo "$name"
+    done | sort -t '|' -k2,2nr
+} | column -t -s '|'
 
 # Print the most recent left datetime
 echo "Most recent left datetime for player with at least $PREFS_MINIMUM_PLAYS counts is: $most_recent_left_name at $most_recent_left_datetime"

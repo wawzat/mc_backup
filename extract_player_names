@@ -3,34 +3,80 @@
 # Change the directory to the log folder
 cd /home/mcserver/minecraft/logs
 
-# Initialize an associative array to store player names and their occurrence counts
+# Initialize associative arrays for player metrics
 declare -A player_counts
 declare -A player_last_left_times
 declare -A player_last_left_epoch_times
+declare -A player_total_play_seconds
+declare -A player_open_join_epoch
+
+format_duration_hhmmss() {
+    local total_seconds="$1"
+    local hours=$(( total_seconds / 3600 ))
+    local minutes=$(( (total_seconds % 3600) / 60 ))
+    local seconds=$(( total_seconds % 60 ))
+    printf "%02d:%02d:%02d" "$hours" "$minutes" "$seconds"
+}
+
+event_file=$(mktemp)
+seq_num=0
 
 # Compress the latest.log file
 gzip -c latest.log > latest.log.gz
 
 # Loop through each .gz file in the directory
 for file in *.gz; do
-    # Use zcat to search for player names and count their occurrences
-    # The regular expression ' left the game' will match lines with player names followed by ' left the game'
-    # The date is parsed from the log filename, the time is parsed from the log line
     # Extract the date from the filename
     file_date=$(echo "$file" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+    if [[ -z "$file_date" ]]; then
+        file_date=$(date +"%Y-%m-%d")
+    fi
+
     while read -r line; do
         if [[ $line =~ ^\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]; then
             time=${line:1:8}
-            name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
-            player_counts["$name"]=$(( player_counts["$name"] + 1 ))
-            player_last_left_times["$name"]=$(date -d "$file_date $time" "+%Y-%m-%d %H:%M:%S")
-            player_last_left_epoch_times["$name"]=$(date -d "$file_date $time" "+%s")
+            datetime="$file_date $time"
+            epoch_time=$(date -d "$datetime" "+%s")
+
+            if [[ $line =~ [[:alnum:]_]+\ joined\ the\ game ]]; then
+                name=$(echo "$line" | grep -oE '[[:alnum:]_]+ joined the game' | awk '{print $1}')
+                seq_num=$(( seq_num + 1 ))
+                echo "$epoch_time|$seq_num|$name|joined|$datetime" >> "$event_file"
+            elif [[ $line =~ [[:alnum:]_]+\ left\ the\ game ]]; then
+                name=$(echo "$line" | grep -oE '[[:alnum:]_]+ left the game' | awk '{print $1}')
+                seq_num=$(( seq_num + 1 ))
+                echo "$epoch_time|$seq_num|$name|left|$datetime" >> "$event_file"
+            fi
         fi
-    done < <(zcat "$file" | grep -E '[[:alnum:]_]+ left the game')
+    done < <(zcat "$file" | grep -E '[[:alnum:]_]+ (joined|left) the game')
 done
 
 # Delete the compressed copy of latest.log
 rm latest.log.gz
+
+# Process normalized events in chronological order per player
+while IFS='|' read -r epoch_time _ name event_type datetime; do
+    if [[ "$event_type" == "joined" ]]; then
+        if [[ -z "${player_open_join_epoch[$name]}" ]]; then
+            player_open_join_epoch["$name"]="$epoch_time"
+        fi
+    elif [[ "$event_type" == "left" ]]; then
+        player_counts["$name"]=$(( player_counts["$name"] + 1 ))
+        player_last_left_times["$name"]="$datetime"
+        player_last_left_epoch_times["$name"]="$epoch_time"
+
+        if [[ -n "${player_open_join_epoch[$name]}" ]]; then
+            join_epoch_time="${player_open_join_epoch[$name]}"
+            if (( epoch_time >= join_epoch_time )); then
+                session_seconds=$(( epoch_time - join_epoch_time ))
+                player_total_play_seconds["$name"]=$(( ${player_total_play_seconds[$name]:-0} + session_seconds ))
+            fi
+            unset player_open_join_epoch["$name"]
+        fi
+    fi
+done < <(sort -t '|' -k1,1n -k2,2n "$event_file")
+
+rm "$event_file"
 
 # Find the latest player_last_left_epoch_time for player names with a count of at least 30
 most_recent_left_epoch_time=0
@@ -47,22 +93,23 @@ done
 # Convert the most recent left epoch time to a human-readable format
 most_recent_left_datetime=$(date -d "@$most_recent_left_epoch_time" "+%Y-%m-%d %H:%M:%S")
 
-# Format the player names, counts, and most recent left times into a table
+# Format the player metrics into a simplified table
 formatted_names=()
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
+    total_play_seconds="${player_total_play_seconds[$name]:-0}"
+    total_play_time=$(format_duration_hhmmss "$total_play_seconds")
     last_left_time="${player_last_left_times[$name]}"
-    last_left_epoch_time="${player_last_left_epoch_times[$name]}"
-    formatted_names+=("$name|$count|$last_left_time|$last_left_epoch_time")
+    formatted_names+=("$name|$count|$total_play_time|$last_left_time")
 done
 
 # Print the table header
-echo "Player Name|Count|Most Recent left Time|Epoch Time"
+echo "Player Name|Count|Total Play Time|Most Recent left Time"
 
-# Print the formatted player names, counts, and most recent left times in a table
+# Print the formatted player metrics in a table
 for name in "${formatted_names[@]}"; do
     echo "$name"
-done | column -t -s '|'
+done | sort | column -t -s '|'
 
 # Print the most recent left datetime
 echo "Most recent left datetime for player with at least 30 counts is: $most_recent_left_name at $most_recent_left_datetime"

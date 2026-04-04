@@ -143,7 +143,7 @@ done
 
 # Print the header and formatted player rows in a single aligned table
 {
-    echo "Player Name|Count|Total Play Time|First Time Seen|Most Recent Left Time"
+    echo "Player Name|Count|Total Play Time|First Time Seen|Last Time Seen"
     for name in "${formatted_names[@]}"; do
         echo "$name"
     done | sort -t '|' -k2,2nr

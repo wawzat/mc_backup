@@ -29,6 +29,8 @@ cd "$CONSTANTS_LOG_PATH"
 declare -A player_counts
 declare -A player_last_left_times
 declare -A player_last_left_epoch_times
+declare -A player_first_seen_times
+declare -A player_first_seen_epoch_times
 declare -A player_total_play_seconds
 declare -A player_open_join_epoch
 
@@ -86,6 +88,11 @@ rm latest.log.gz
 
 # Process normalized events in chronological order per player
 while IFS='|' read -r epoch_time _ name event_type datetime; do
+    if [[ -z "${player_first_seen_epoch_times[$name]}" ]] || (( epoch_time < player_first_seen_epoch_times[$name] )); then
+        player_first_seen_epoch_times["$name"]="$epoch_time"
+        player_first_seen_times["$name"]="$datetime"
+    fi
+
     if [[ "$event_type" == "joined" ]]; then
         if [[ -z "${player_open_join_epoch[$name]}" ]]; then
             player_open_join_epoch["$name"]="$epoch_time"
@@ -129,13 +136,14 @@ for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     total_play_seconds="${player_total_play_seconds[$name]:-0}"
     total_play_time=$(format_duration_hhmmss "$total_play_seconds")
+    first_seen_time="${player_first_seen_times[$name]}"
     last_left_time="${player_last_left_times[$name]}"
-    formatted_names+=("$name|$count|$total_play_time|$last_left_time")
+    formatted_names+=("$name|$count|$total_play_time|$first_seen_time|$last_left_time")
 done
 
 # Print the header and formatted player rows in a single aligned table
 {
-    echo "Player Name|Count|Total Play Time|Most Recent Left Time"
+    echo "Player Name|Count|Total Play Time|First Time Seen|Most Recent Left Time"
     for name in "${formatted_names[@]}"; do
         echo "$name"
     done | sort -t '|' -k2,2nr

@@ -47,7 +47,7 @@
   
 # extract_player_names
   
-## Bash script that extracts the names of all players from the logs along with the number of times they've joined.
+## Bash script that extracts the names of all players from the logs along with the number of times they've joined, total play time, first and last time seen.
   
 ### Notes:
   

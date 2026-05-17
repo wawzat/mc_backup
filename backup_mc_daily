@@ -113,9 +113,10 @@ fi
 
 if [[ $result == *"False"* || $force_backup == "True" ]]; then
     # Execute the backup.
-    screen -R mc -xX stuff "say Server backup starting. World not saving until complete...$(printf '\r')"
-    screen -R mc -xX stuff "save-off$(printf '\r')"
-    screen -R mc -xX stuff "save-all$(printf '\r')"
+    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "say Server backup starting. World not saving until complete..."
+    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "save-off"
+    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "save-all flush"
+
     sleep 3
 
     # Move the existing backup files 0 -> 1, 1 -> 2, etc.
@@ -130,8 +131,8 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
     find_world_paths
     tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${WORLD_PATHS[@]}"
 
-    screen -R mc -xX stuff "save-on$(printf '\r')"
-    screen -R mc -xX stuff "say Server backup complete. World now saving. $(printf '\r')"
+    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "save-on"
+    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "say Server backup complete. World now saving."
     
     if [[ "$PREFS_USE_RCLONE" == "True" ]]; then
         # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.

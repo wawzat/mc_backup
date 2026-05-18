@@ -3,6 +3,7 @@
 # The script scans the logs for player names, the number of times they've joined and the most recent timestamp they've left the game.
 # The log search is used as criteria to determine if a backup is required. If a player with more than minimum_plays has 
 #   left the game since the last backup then a backup is required.
+# script must run in root's crontab due to minecraft.env having only root read permissions to protect the rcon password.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
 # Edit the config.yml file to change constants and preferences according to your needs and data structure.
 # James S. Lucas - 20260518
@@ -126,13 +127,13 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
     for ((i=PREFS_NUM_DAYS-1; i>0; i--)); do
         current_day=$((i - 1))
         if [ -f "${CONSTANTS_BACKUP_PATH}/minecraft_day${current_day}.tar.gz" ]; then
-            mv "${CONSTANTS_BACKUP_PATH}/minecraft_day${current_day}.tar.gz" "${CONSTANTS_BACKUP_PATH}/minecraft_day${i}.tar.gz"
+            sudo -u mcserver mv "${CONSTANTS_BACKUP_PATH}/minecraft_day${current_day}.tar.gz" "${CONSTANTS_BACKUP_PATH}/minecraft_day${i}.tar.gz"
         fi
     done
 
     # Create tha backup.
     find_world_paths
-    tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${WORLD_PATHS[@]}"
+    sudo -u mcserver tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${WORLD_PATHS[@]}"
 
     mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "save-on"
     mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "say Server backup complete. World now saving."
@@ -159,7 +160,7 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
         rclone moveto "latest_log.txt" "${CONSTANTS_RCLONE_REMOTE}:latest_log.txt"
         # rm $(ls -t 20*.log | head -1)
     fi
-    echo "backup run from $script_start_time to $(date +"%Y-%m-%d %H:%M:%S %Z")" >> "${CONSTANTS_BACKUP_PATH}/backup_log.txt"
+    sudo -u mcserver bash -c "echo \"backup run from $script_start_time to $(date '+%Y-%m-%d %H:%M:%S %Z')\" >> '${CONSTANTS_BACKUP_PATH}/backup_log.txt'"
 else
     echo "World not modified since most recent backup, no backup required. $(printf '\r')"
 fi

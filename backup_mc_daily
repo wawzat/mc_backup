@@ -5,7 +5,10 @@
 #   left the game since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
 # Edit the config.yml file to change constants and preferences according to your needs and data structure.
-# James S. Lucas - 20241202
+# James S. Lucas - 20250518
+
+# Load the environment variable for rcon password
+source /etc/minecraft.env
 
 # Load the config.yml file
 # parse_yaml function code credit Stefan Farestam: https://stackoverflow.com/questions/5014632/how-can-i-parse-a-yaml-file-from-a-linux-shell-script/21189044#21189044
@@ -113,9 +116,9 @@ fi
 
 if [[ $result == *"False"* || $force_backup == "True" ]]; then
     # Execute the backup.
-    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "say Server backup starting. World not saving until complete..."
-    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "save-off"
-    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "save-all flush"
+    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "say Server backup starting. World not saving until complete..."
+    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "save-off"
+    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "save-all flush"
 
     sleep 3
 
@@ -131,8 +134,8 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
     find_world_paths
     tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${WORLD_PATHS[@]}"
 
-    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "save-on"
-    mcrcon -H 127.0.0.1 -P 25575 -p YOUR_RCON_PASSWORD "say Server backup complete. World now saving."
+    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "save-on"
+    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "say Server backup complete. World now saving."
     
     if [[ "$PREFS_USE_RCLONE" == "True" ]]; then
         # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.

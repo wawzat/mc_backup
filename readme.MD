@@ -9,6 +9,7 @@
 ### Notes:
  
 - Modify the configuration variables in config.yml according to your needs and directory structure.
+- The script requires your mcrcon password to be stored as RCON_PASS in /etc/minecraft.env
 - The script is designed to be run as a cron job.
 - Set USE_RCLONE="False" if you don't want to use rclone to also copy the files to a cloud storage provider. To use rclone you must first have it installed and configured.
 - Use the -f command line argument to force a backup even if the most recent backup is newer than the most recent player play session.

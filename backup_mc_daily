@@ -5,7 +5,7 @@
 #   left the game since the last backup then a backup is required.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
 # Edit the config.yml file to change constants and preferences according to your needs and data structure.
-# James S. Lucas - 20250518
+# James S. Lucas - 20260518
 
 # Load the environment variable for rcon password
 source /etc/minecraft.env

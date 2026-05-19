@@ -6,7 +6,7 @@
 # script must run in root's crontab due to minecraft.env having only root read permissions to protect the rcon password.
 # Sample cron entry 0 10 * * * /home/mcserver/minecraft/mc_backup/backup_mc_daily runs the script at 10:00 AM every day.
 # Edit the config.yml file to change constants and preferences according to your needs and data structure.
-# James S. Lucas - 20260518
+# James S. Lucas - 20260519
 
 # Load the environment variable for rcon password
 source /etc/minecraft.env
@@ -117,9 +117,9 @@ fi
 
 if [[ $result == *"False"* || $force_backup == "True" ]]; then
     # Execute the backup.
-    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "say Server backup starting. World not saving until complete..."
-    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "save-off"
-    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "save-all flush"
+    mcrcon -H 127.0.0.1 -P 25575 -p "$RCON_PASS" "say Server backup starting. World not saving until complete..."
+    mcrcon -H 127.0.0.1 -P 25575 -p "$RCON_PASS" "save-off"
+    mcrcon -H 127.0.0.1 -P 25575 -p "$RCON_PASS" "save-all flush"
 
     sleep 3
 
@@ -135,18 +135,18 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
     find_world_paths
     sudo -u mcserver tar -cpvzf "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${WORLD_PATHS[@]}"
 
-    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "save-on"
-    mcrcon -H 127.0.0.1 -P 25575 -p $RCON_PASS "say Server backup complete. World now saving."
+    mcrcon -H 127.0.0.1 -P 25575 -p "$RCON_PASS" "save-on"
+    mcrcon -H 127.0.0.1 -P 25575 -p "$RCON_PASS" "say Server backup complete. World now saving."
     
     if [[ "$PREFS_USE_RCLONE" == "True" ]]; then
         # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.
         for ((i=PREFS_NUM_DAYS-1; i>0; i--)); do
             current_day=$((i - 1))
-            rclone moveto "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${current_day}.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${i}.tar.gz"
+            sudo -u mcserver rclone moveto "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${current_day}.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${i}.tar.gz"
         done
         # Copy the new backup to the rclone remote
-        rclone copy "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:"
-        rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
+        sudo -u mcserver rclone copy "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:"
+        sudo -u mcserver rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
         # Unip the most recent log archive and copy it and latest.log to the rclone remote
         last_file=$(ls -t *.log.gz | head -1)
         cp "${last_file}" "${CONSTANTS_TEMP_LOG_PATH}/"
@@ -156,8 +156,8 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
         unzipped_file=$(ls -t *.log | head -1)
         # Insert the filename at the beginning of the text file
         sed -i "1i${last_file}" "${unzipped_file}" 
-        rclone moveto "${CONSTANTS_TEMP_LOG_PATH}/$(ls -t *.log | head -1)" "${CONSTANTS_RCLONE_REMOTE}:most_recent_log_archive.txt"
-        rclone moveto "latest_log.txt" "${CONSTANTS_RCLONE_REMOTE}:latest_log.txt"
+        sudo -u mcserver rclone moveto "${CONSTANTS_TEMP_LOG_PATH}/$(ls -t *.log | head -1)" "${CONSTANTS_RCLONE_REMOTE}:most_recent_log_archive.txt"
+        sudo -u mcserver rclone moveto "latest_log.txt" "${CONSTANTS_RCLONE_REMOTE}:latest_log.txt"
         # rm $(ls -t 20*.log | head -1)
     fi
     sudo -u mcserver bash -c "echo \"backup run from $script_start_time to $(date '+%Y-%m-%d %H:%M:%S %Z')\" >> '${CONSTANTS_BACKUP_PATH}/backup_log.txt'"

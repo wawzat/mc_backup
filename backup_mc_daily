@@ -156,13 +156,15 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
         last_file=$(ls -t *.log.gz | head -1)
         cp "${last_file}" "${CONSTANTS_TEMP_LOG_PATH}/"
         cp latest.log "${CONSTANTS_TEMP_LOG_PATH}/latest_log.txt"
-        cd "${CONSTANTS_TEMP_LOG_PATH}"
+        # Never operate on the live logs dir: sed -i/moveto there would replace latest.log's inode and orphan the server's open handle.
+        cd "${CONSTANTS_TEMP_LOG_PATH}" || exit 1
         gunzip -f "${last_file}"
-        unzipped_file=$(ls -t *.log | head -1)
+        unzipped_file="${last_file%.gz}"
         # Insert the filename at the beginning of the text file
         sed -i "1i${last_file}" "${unzipped_file}" 
-        sudo -u mcserver rclone moveto "${CONSTANTS_TEMP_LOG_PATH}/$(ls -t *.log | head -1)" "${CONSTANTS_RCLONE_REMOTE}:most_recent_log_archive.txt"
-        sudo -u mcserver rclone moveto "latest_log.txt" "${CONSTANTS_RCLONE_REMOTE}:latest_log.txt"
+        sudo -u mcserver rclone moveto "${CONSTANTS_TEMP_LOG_PATH}/${unzipped_file}" "${CONSTANTS_RCLONE_REMOTE}:most_recent_log_archive.txt"
+        sudo -u mcserver rclone moveto "${CONSTANTS_TEMP_LOG_PATH}/latest_log.txt" "${CONSTANTS_RCLONE_REMOTE}:latest_log.txt"
+        cd "$CONSTANTS_LOG_PATH" || exit 1
         # rm $(ls -t 20*.log | head -1)
     fi
     sudo -u mcserver bash -c "echo \"backup run from $script_start_time to $(date '+%Y-%m-%d %H:%M:%S %Z')\" >> '${CONSTANTS_BACKUP_PATH}/backup_log.txt'"

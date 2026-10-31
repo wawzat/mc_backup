@@ -142,17 +142,22 @@ if [[ $result == *"False"* || $force_backup == "True" ]]; then
         # Move the existing rclone remote backup files 0 -> 1, 1 -> 2, etc.
         for ((i=PREFS_NUM_DAYS-1; i>0; i--)); do
             current_day=$((i - 1))
-            sudo -u mcserver rclone moveto "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${current_day}.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${i}.tar.gz"
+            # Skip if the remote file doesn't exist yet (e.g. new server).
+            if [[ -n $(sudo -u mcserver rclone lsf "${CONSTANTS_RCLONE_REMOTE}:" --files-only --include "minecraft_day${current_day}.tar.gz") ]]; then
+                sudo -u mcserver rclone moveto "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${current_day}.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:minecraft_day${i}.tar.gz"
+            fi
         done
         # Copy the new backup to the rclone remote
         sudo -u mcserver rclone copy "${CONSTANTS_BACKUP_PATH}/minecraft_day0.tar.gz" "${CONSTANTS_RCLONE_REMOTE}:"
-        sudo -u mcserver rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
+        if [[ -f "${CONSTANTS_BACKUP_PATH}/backup_log.txt" ]]; then
+            sudo -u mcserver rclone copy "${CONSTANTS_BACKUP_PATH}/backup_log.txt" "${CONSTANTS_RCLONE_REMOTE}:"
+        fi
         # Unip the most recent log archive and copy it and latest.log to the rclone remote
         last_file=$(ls -t *.log.gz | head -1)
         cp "${last_file}" "${CONSTANTS_TEMP_LOG_PATH}/"
         cp latest.log "${CONSTANTS_TEMP_LOG_PATH}/latest_log.txt"
         cd "${CONSTANTS_TEMP_LOG_PATH}"
-        gunzip "${last_file}"
+        gunzip -f "${last_file}"
         unzipped_file=$(ls -t *.log | head -1)
         # Insert the filename at the beginning of the text file
         sed -i "1i${last_file}" "${unzipped_file}" 

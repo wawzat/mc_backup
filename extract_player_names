@@ -117,18 +117,21 @@ rm "$event_file"
 
 # Find the latest player_last_left_epoch_time for player names with a count of at least PREFS_MINIMUM_PLAYS
 most_recent_left_epoch_time=0
-most_recent_left_name=" "
+most_recent_left_name=""
+found_eligible_player=false
 for name in "${!player_counts[@]}"; do
     count="${player_counts[$name]}"
     last_left_epoch_time="${player_last_left_epoch_times[$name]}"
     if (( count >= PREFS_MINIMUM_PLAYS )) && (( last_left_epoch_time > most_recent_left_epoch_time )); then
         most_recent_left_epoch_time="$last_left_epoch_time"
         most_recent_left_name="$name"
+        found_eligible_player=true
     fi
 done
 
-# Convert the most recent left epoch time to a human-readable format
-most_recent_left_datetime=$(date -d "@$most_recent_left_epoch_time" "+%Y-%m-%d %H:%M:%S")
+if [[ "$found_eligible_player" == true ]]; then
+    most_recent_left_datetime=$(date -d "@$most_recent_left_epoch_time" "+%Y-%m-%d %H:%M:%S")
+fi
 
 # Format the player metrics into a simplified table
 formatted_names=()
@@ -150,4 +153,8 @@ done
 } | column -t -s '|'
 
 # Print the most recent left datetime
-echo "Most recent left datetime for player with at least $PREFS_MINIMUM_PLAYS counts is: $most_recent_left_name at $most_recent_left_datetime"
+if [[ "$found_eligible_player" == true ]]; then
+    echo "Most recent left datetime for player with at least $PREFS_MINIMUM_PLAYS counts is: $most_recent_left_name at $most_recent_left_datetime"
+else
+    echo "No player has at least $PREFS_MINIMUM_PLAYS counts."
+fi
